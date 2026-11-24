@@ -1,6 +1,5 @@
 """Regressions for problems found when an agent ran the install prompt on a fresh VPS."""
 import importlib.util
-import os
 from pathlib import Path
 
 import pytest
@@ -19,13 +18,11 @@ def test_installer_finds_uv_before_path_is_updated(tmp_path, monkeypatch):
     mod = load_installer()
     uv = tmp_path/'.local/bin/uv'
     uv.parent.mkdir(parents=True)
-    uv.write_text('#!/bin/sh
-')
+    uv.write_text('#!/bin/sh\n')
     uv.chmod(0o755)
     monkeypatch.setattr(mod.Path, 'home', lambda: tmp_path)
     monkeypatch.setattr(mod.shutil, 'which', lambda name: None)
-    if os.access(uv, os.X_OK):
-        assert mod.find_uv() == str(uv)
+    assert mod.find_uv() == str(uv)
 
 
 def test_missing_key_without_terminal_fails_fast_with_instructions(monkeypatch, tmp_path, capsys):
