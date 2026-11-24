@@ -31,11 +31,12 @@ No Discord account required. No creator's real books or private policies include
 ## Start with one prompt
 
 Copy [the installation prompt](docs/INSTALL_PROMPT.md) into a **working Hermes
-agent**, replacing its repository URL placeholder with the public GitHub URL.
-Hermes inspects and installs the package, then guides you through connection.
+agent**. Hermes inspects and installs the package, starts the dashboard, then
+guides you through connecting your email.
 
 The account-specific human steps cannot be skipped:
-1. Create your own Composio account/project and supply your API key privately.
+1. Create your own Composio account/project and save your API key yourself over SSH
+   (`uv run python -m accounting_starter.composio_email configure`).
 2. Create the documented Gmail read-only auth configuration.
 3. Open the connection link and approve Google consent.
 4. Review the first scan before enabling recurring scans.

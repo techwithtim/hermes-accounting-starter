@@ -39,8 +39,8 @@ systemctl --user status accounting-starter
 ```
 
 Verify the health endpoint with `curl -f http://127.0.0.1:8765/health`.
-User lingering may be required to keep running after logout; this is a host
-administrator decision. Containers without systemd should use their normal
+User services stop when you log out unless lingering is on:
+`loginctl enable-linger "$USER"` (may need sudo; a host administrator decision). Containers without systemd should use their normal
 supervisor. Do not claim the service is installed just because this example
 exists. The installer itself does not change host services.
 

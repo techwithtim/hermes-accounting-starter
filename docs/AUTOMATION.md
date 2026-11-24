@@ -11,13 +11,25 @@ first review-first scan. Confirm the account, lookback range, classification
 policy and scan frequency. The installer prompt includes this handoff; you
 do not need Discord or another chat integration.
 
-Using Hermes's cronjob tool, first list existing jobs. Create or update two
-jobs with names unique to this installation (never modify unrelated jobs):
+First list existing jobs (`hermes cron list`). Create or update two jobs with
+names unique to this installation (never modify unrelated jobs):
 
 - **Accounting Starter — hourly capture**: schedule `every 1h`.
 - **Accounting Starter — daily review**: schedule `every 24h`.
 
-Both use `skills: ["accounting-starter"]`. The job prompt must include the
+Both attach the `accounting-starter` skill. With the Hermes CLI (v0.23):
+
+```sh
+hermes cron create "every 1h" --name "Accounting Starter — hourly capture"   --skill accounting-starter --deliver local "<hourly prompt below, filled in>"
+hermes cron create "every 24h" --name "Accounting Starter — daily review"   --skill accounting-starter --deliver local "<daily prompt below, filled in>"
+hermes cron list
+hermes cron status
+```
+
+`hermes cron status` must report a running scheduler. If it says no scheduler
+is serving the profile, the jobs are saved but will never fire: start the
+Hermes gateway (`hermes gateway install`, or however your host runs Hermes)
+and check again. Hermes's in-chat cronjob tool works the same way. The job prompt must include the
 actual checkout path, data directory, connected-account ID and the user's
 approved policy. Keep delivery local unless the owner chooses a destination.
 No secrets in job prompts: the connector reads its private credential file.

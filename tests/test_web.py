@@ -51,5 +51,6 @@ def test_health_and_document_metadata_views(tmp_path):
     from accounting_starter.web import create_app
     client = TestClient(create_app(tmp_path / 'ledger.sqlite3'))
     assert client.get('/health').status_code == 200
-    assert client.get('/health').json() == {'status': 'ok'}
+    assert client.get('/health').json()['status'] == 'ok'
+    assert client.get('/health').json()['ledger'] in {'demo', 'live'}
     assert client.get('/documents').status_code == 200

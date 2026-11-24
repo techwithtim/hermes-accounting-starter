@@ -1,41 +1,57 @@
 # Copy-paste installation prompt
 
-Replace `<PUBLIC_REPOSITORY_URL>` with this repository's published HTTPS URL.
-Use this in an already configured Hermes agent with terminal access:
+Paste this into an already configured Hermes agent with terminal access
+(for example the Hermes web chat on your VPS):
 
 ```text
-Install the bookkeeping system from <PUBLIC_REPOSITORY_URL> in a new,
-dedicated local directory. Read README.md, AGENTS.md and docs/SECURITY.md
-first. Do not read, copy, migrate or alter any existing accounting system,
-private rules, memories, credentials or other Hermes profiles.
+Install the bookkeeping system from
+https://github.com/techwithtim/hermes-accounting-starter
+into ~/apps/hermes-accounting-starter. Read README.md, AGENTS.md and
+docs/SECURITY.md first. Do not read, copy, migrate or alter any existing
+accounting system, private rules, memories, credentials or other Hermes
+profiles.
 
-Check Python 3.11+, uv, git and Hermes availability. Install missing software
-using its official installer only with my approval when needed. Clone this
-repository, inspect scripts/install.py, run its --dry-run, then install with
-python3 scripts/install.py targeting my active HERMES_HOME. Use a runtime
-data directory outside the repository. Do not overwrite existing MCP entries
-or customized skills. Install the locked dependencies, including Composio.
+Check Python 3.11+, uv, git and Hermes. If uv is missing, install it with
+Astral's official installer (curl -LsSf https://astral.sh/uv/install.sh | sh)
+and then run: source ~/.local/bin/env. Clone the repository, inspect
+scripts/install.py, run python3 scripts/install.py --dry-run, then run
+python3 scripts/install.py for my active HERMES_HOME. Keep the default data
+directory (~/.local/share/hermes-accounting-starter), never inside the repo.
+Do not overwrite existing MCP entries or customized skills.
 
-Initialize an empty live ledger and a separate fictional demo. Test the MCP
-connection in a new session, launch the localhost-only dashboard, and give
-me its local URL (or the SSH tunnel steps if this is a VPS). Keep the app
-running using the documented service setup when supported.
+From the checkout, create the separate fictional demo with
+uv run accounting-starter --demo demo. Check the MCP server with
+hermes mcp test accounting-starter. Start the live dashboard on port 8766 and
+the demo on port 8765 (uv run accounting-starter serve --port 8766 and
+uv run accounting-starter --demo serve --port 8765) and confirm that
+curl http://127.0.0.1:8766/health says "live" and 8765 says "demo". If either
+port is taken, pick a free one and tell me. This is a VPS, so give me the
+exact SSH tunnel command for my laptop. Offer to keep the dashboard running
+with the systemd user service in docs/DEPLOYMENT.md.
 
-Follow docs/COMPOSIO.md. Guide me through creating my own Composio account,
-API credential and read-only Gmail auth configuration, then generate my
-connection link. Ask me to enter secrets in a private terminal prompt, NOT
-in this conversation. Wait for my OAuth consent. Verify connection and one
-real fetch before saying email is connected. Never use someone else's keys.
+Then connect my email following docs/COMPOSIO.md. Walk me through creating my
+own Composio account, API key and Gmail auth config step by step. I will save
+the API key myself over SSH with the configure command, never in this chat.
+Then generate my connection link, wait for me to approve Google consent, and
+check status and one small real fetch before saying email is connected.
+Use a random UUID as my owner ID and save it, with my connected account ID,
+in ~/.local/share/hermes-accounting-starter/connection.md.
 
-Load the accounting-starter skill, run one review-first scan, and show me the
-results. Then create the opt-in hourly scan and daily review jobs described
-in docs/AUTOMATION.md after confirming the email account, scope and schedule
-with me. Do not claim a scheduled job exists until its ID has been verified.
-Clearly report anything blocked, including permissions or OAuth. Do not send
-emails, initiate payments, expose this dashboard publicly, or ingest demo
-records into my real books.
+Load the accounting-starter skill, run one review-first scan of the last
+seven days, and show me what you found. Do not book anything yet. After I
+approve, create the hourly scan and daily review jobs from docs/AUTOMATION.md,
+confirm hermes cron status shows a running scheduler, and show me the job IDs.
+Clearly report anything blocked. Never send emails, make payments, expose the
+dashboard publicly, or put demo records into my real books.
 ```
 
-A prompt cannot perform signup, OAuth consent or provide free model/API usage.
-The existing Hermes must already have its own working model access. The
-package installs Composio's SDK; the recipient supplies their own account.
+What the person still does by hand (no prompt can do these for them):
+1. Sign up for Composio and create an API key.
+2. Run the `configure` command over SSH to save that key privately.
+3. Create the Gmail auth config (and, if Composio requires it for read-only
+   access, a Google OAuth app). See [COMPOSIO.md](COMPOSIO.md).
+4. Click the connection link and approve Google consent.
+5. Approve the first scan before recurring jobs are created.
+
+The Hermes agent must already have working model access. Composio and model
+usage are billed by those providers.

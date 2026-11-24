@@ -36,6 +36,7 @@ def test_cli_configure_and_later_noninteractive_status(tmp_path, monkeypatch, ca
     path = tmp_path/'private'/'credentials.json'
     monkeypatch.setattr(credentials, 'default_path', lambda: path)
     monkeypatch.delenv('COMPOSIO_API_KEY', raising=False)
+    monkeypatch.setattr(m, '_interactive', lambda: True)
     monkeypatch.setattr('getpass.getpass', lambda prompt: 'synthetic-test-value')
     assert m.main(['configure']) == 0
     assert path.is_file()

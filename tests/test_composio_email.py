@@ -121,6 +121,7 @@ def test_cli_connect_prompts_secret_and_prints_link(monkeypatch, capsys):
         status='ENABLED', credentials={'scopes': m.READONLY_SCOPE})
     c.connected_accounts.link.return_value = NS(id='ca_test', redirect_url='https://connect.composio.dev/link/test')
     monkeypatch.delenv('COMPOSIO_API_KEY', raising=False)
+    monkeypatch.setattr(m, '_interactive', lambda: True)
     monkeypatch.setattr('getpass.getpass', lambda prompt: 'prompted-test-secret')
     monkeypatch.setattr('composio.Composio', lambda **kwargs: c if kwargs['api_key'] == 'prompted-test-secret' else None)
     assert m.main(['connect', '--user-id', 'user-test', '--auth-config-id', 'ac_test']) == 0

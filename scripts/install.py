@@ -9,6 +9,18 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 
+
+def find_uv():
+    """Find uv even when its installer has not yet updated this shell's PATH."""
+    found = shutil.which('uv')
+    if found:
+        return found
+    for candidate in (Path.home()/'.local/bin/uv', Path.home()/'.cargo/bin/uv'):
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dry-run', action='store_true')
@@ -20,7 +32,8 @@ def main():
     if data == ROOT or ROOT in data.parents:
         parser.error('Runtime data must be outside the public repository')
     exe = ROOT/'.venv/bin/accounting-starter'
-    commands = [['uv', 'sync', '--frozen'], [str(exe), '--data-dir', str(data), 'init']]
+    uv = find_uv() or 'uv'
+    commands = [[uv, 'sync', '--frozen'],[str(exe), '--data-dir', str(data), 'init']]
     if not args.skip_hermes:
         print('Register using hermes mcp add accounting-starter (with persistence verification).')
         commands.append([str(ROOT/'.venv/bin/python'), str(ROOT/'scripts/register_mcp.py'), str(home), str(exe), str(data)])
@@ -29,8 +42,9 @@ def main():
         print(shlex.join(command))
     if args.dry_run:
         return
-    if not shutil.which('uv'):
-        parser.error('uv is required; see https://docs.astral.sh/uv/getting-started/installation/')
+    if not find_uv():
+        parser.error('uv is required; install it from https://docs.astral.sh/uv/getting-started/installation/ '
+                     '(if you just installed it, run: source ~/.local/bin/env)')
     if not args.skip_hermes and not shutil.which('hermes'):
         parser.error('Install and configure Hermes first, or use --skip-hermes')
     target = home/'skills/accounting-starter/SKILL.md'

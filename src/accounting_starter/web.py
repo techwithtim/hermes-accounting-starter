@@ -44,8 +44,8 @@ def create_app(path: str | Path, *, demo: bool = False) -> FastAPI:
 
     @app.get('/health')
     def health():
-        ledger.summary()
-        return {'status': 'ok'}
+        summary = ledger.summary()
+        return {'status': 'ok', 'ledger': 'demo' if demo or summary['is_demo'] else 'live'}
 
     @app.get('/', response_class=HTMLResponse)
     @app.get('/{view}', response_class=HTMLResponse)

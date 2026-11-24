@@ -71,14 +71,21 @@ and re-test the ownership verification rather than bypassing it.
 
 ## CLI walkthrough
 
-Run from the installed starter environment (`uv run python` in the checkout,
-or its absolute `.venv/bin/python`). IDs below are placeholders; replace with
+> **Do the key step yourself, over SSH.** An AI agent's terminal cannot take
+> hidden input, so `configure` must be run by you in a real SSH session:
+> `cd <checkout> && uv run python -m accounting_starter.composio_email configure`.
+> Without a terminal the commands stop with this instruction instead of
+> hanging. After that, the agent can run `connect`, `status` and `fetch`.
+
+Run every command from the checkout with `uv run python -m ...` (or the
+checkout's absolute `.venv/bin/python -m ...`). A bare system `python` does not
+have the package installed. IDs below are placeholders; replace with
 your own. Configure your key once as above; otherwise commands prompt without
 echo when no environment key or private credential file is available.
 Do not enable shell tracing or SDK debug logs around secrets or email.
 
 ```bash
-python -m accounting_starter.composio_email connect \
+uv run python -m accounting_starter.composio_email connect \
   --user-id YOUR_STABLE_OWNER_ID --auth-config-id ac_YOUR_CONFIG
 ```
 
@@ -90,7 +97,7 @@ the existing account ID instead. This adapter does not enable multiple-account
 creation implicitly.
 
 ```bash
-python -m accounting_starter.composio_email status \
+uv run python -m accounting_starter.composio_email status \
   --user-id YOUR_STABLE_OWNER_ID --connected-account-id ca_YOUR_ACCOUNT
 ```
 
@@ -103,7 +110,7 @@ Create a private directory **outside every source repository**, mode `0700`:
 
 ```bash
 install -d -m 700 "$HOME/.local/share/accounting-private"
-python -m accounting_starter.composio_email fetch \
+uv run python -m accounting_starter.composio_email fetch \
   --user-id YOUR_STABLE_OWNER_ID --connected-account-id ca_YOUR_ACCOUNT \
   --query 'after:2026/01/01 has:attachment' --max-pages 100 \
   --output "$HOME/.local/share/accounting-private/mail-001.json"
@@ -170,7 +177,7 @@ base64url. No attachment execution or automatic document parsing is provided.
   `auth_configs.get`, `tools.proxy`, and generated response models. No legacy
   `composio_core`, invented toolkit slugs, or unversioned dependency was used.
 
-Offline verification: `python -m pytest tests/test_composio_email.py -q`.
+Offline verification: `uv run --extra dev pytest tests/test_composio_email.py -q`.
 Live acceptance (operator only): complete consent on your own account, see ACTIVE
 and ready, fetch a narrow known query, compare returned IDs to Gmail, and read one
 known attachment. Until that succeeds, describe this as **SDK/offline validated,
