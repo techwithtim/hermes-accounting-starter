@@ -1,0 +1,15 @@
+[Unit]
+Description=Accounting Starter local dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/ABSOLUTE/PATH/hermes-accounting-starter
+ExecStart=/ABSOLUTE/PATH/hermes-accounting-starter/.venv/bin/accounting-starter --data-dir /ABSOLUTE/PRIVATE/DATA serve --port 8765
+Restart=on-failure
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

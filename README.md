@@ -1,0 +1,127 @@
+# Ledger Starter for Hermes
+
+**A local-first bookkeeping package you can install through your existing Hermes agent.**
+
+Connect your own Gmail through Composio, let Hermes review financial evidence,
+and keep invoices, expenses, incoming payments and source records in your own
+SQLite database. A read-only dashboard makes the results easy to inspect.
+No Discord account required. No creator's real books or private policies included.
+
+> **Release status:** working starter, not audited accounting software. Local
+> installation, MCP and tests can be verified without email credentials. Live
+> Composio OAuth must be validated with your own account before unattended use.
+
+![Fictional demo dashboard](docs/demo-dashboard.png)
+
+## What's included
+
+- Local dashboard: overview by currency, invoices, expenses, incoming payments,
+  clients, review queue, document metadata and audit history.
+- Typed Hermes MCP tools for ledger writes, payment allocation and review.
+- Exact integer minor-unit storage; original currencies kept separate.
+- Source IDs and conflict checks for repeat-safe ingestion; ambiguous items go
+  to review rather than guessed totals.
+- Separate empty live ledger and explicitly fictional demo database.
+- Composio SDK installed with the package; read-only Gmail connection/status,
+  paginated message retrieval and attachment retrieval helper.
+- Generic Hermes bookkeeping skill and hourly/daily scan job templates.
+- Installer, copy-paste agent prompt, security guide, VPS instructions,
+  locked dependencies and tests.
+
+## Start with one prompt
+
+Copy [the installation prompt](docs/INSTALL_PROMPT.md) into a **working Hermes
+agent**, replacing its repository URL placeholder with the public GitHub URL.
+Hermes inspects and installs the package, then guides you through connection.
+
+The account-specific human steps cannot be skipped:
+1. Create your own Composio account/project and supply your API key privately.
+2. Create the documented Gmail read-only auth configuration.
+3. Open the connection link and approve Google consent.
+4. Review the first scan before enabling recurring scans.
+
+**Important:** custom read-only scopes may require your own Google OAuth app
+or Composio support approval. This is not guaranteed to be a five-second setup.
+See [the exact Composio guide](docs/COMPOSIO.md). Existing Hermes model access,
+terminal access and package-download connectivity are prerequisites. Composio
+and LLM usage are subject to their respective plans/charges.
+
+## Manual install
+
+Linux, Python 3.11+, [uv](https://docs.astral.sh/uv/getting-started/installation/),
+Git, and a configured [Hermes agent](https://hermes-agent.nousresearch.com/docs/).
+Clone this repository into its own directory, then from that checkout:
+
+```sh
+python3 scripts/install.py --dry-run
+python3 scripts/install.py
+```
+
+The installer installs locked dependencies, creates an empty live ledger,
+registers a new `accounting-starter` MCP server using Hermes's native CLI, and
+installs its skill into the active `HERMES_HOME`. It refuses a conflicting MCP
+registration/customized skill. Existing unrelated configuration is preserved.
+Start a new Hermes session to use the new tools.
+
+Use `--skip-hermes` for a standalone local demo. Use `--data-dir /private/path`
+to select private external storage. Do not put financial data in this checkout.
+No existing books are imported and no mail is read during installation.
+
+## See the demo
+
+```sh
+uv run accounting-starter --demo demo
+uv run accounting-starter --demo serve --port 8765
+```
+
+Open http://127.0.0.1:8765. For your live ledger, omit `--demo`.
+The global `--data-dir` and `--demo` options must precede the command.
+Demo and live use separate files; seeding demo never populates live books.
+
+For a remote server, use an SSH tunnel, not a public unauthenticated URL.
+See [deployment and service instructions](docs/DEPLOYMENT.md).
+
+## Connect and automate
+
+1. Follow [COMPOSIO.md](docs/COMPOSIO.md) to configure a private key and connect.
+2. Ask Hermes to load the `accounting-starter` skill and run a review-first scan.
+3. Confirm the classification policy and enable the supplied
+   [hourly capture/daily review jobs](docs/AUTOMATION.md).
+4. Verify a real completed scan before calling automation operational.
+
+Suggested chat requests:
+- “Show unpaid invoices and unallocated incoming payments.”
+- “Review recent Gmail financial messages; show proposals before booking.”
+- “Record this confirmed expense with the original source and currency.”
+- “Which items still need evidence or human review?”
+
+## What it is not
+
+This is not a full double-entry/tax ledger, bank reconciliation engine,
+invoice-sending system or multi-tenant hosted product. Expenses are evidence
+records, not a separate bank cash-out journal. Document links are metadata,
+not automatic cloud backup. Attachments can be retrieved, but scanned-PDF OCR
+is not bundled. Hermes must read/parse evidence before booking; unreadable
+attachments remain review items. Gmail is the first supported provider;
+Outlook is not implemented here.
+
+No automated classifier can guarantee correct financial decisions. Source-ID
+deduplication does not alone detect different emails about the same economic
+event. Review, reconciliation and accountant sign-off still matter.
+
+## Development
+
+```sh
+uv sync --frozen --extra dev
+uv run --extra dev pytest -q
+uv build
+```
+
+Dependency versions are locked in `uv.lock`; Composio is additionally pinned
+because its auth response contracts are part of our security checks.
+Tests use synthetic fixtures, not real mailbox data. Never commit databases,
+credentials, runtime outputs or real financial records. Read
+[SECURITY.md](docs/SECURITY.md) and [AGENTS.md](AGENTS.md) before modifying.
+
+MIT licensed. Not affiliated with or endorsed by Composio, Google or a hosting
+provider. The recipient owns their accounts, credentials and private data.
