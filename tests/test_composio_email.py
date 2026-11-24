@@ -18,6 +18,7 @@ def client():
     real = Composio(api_key='unit-test-not-a-real-key')
     return NS(connected_accounts=NS(link=create_autospec(real.connected_accounts.link),
                                    get=create_autospec(real.connected_accounts.get)),
+              toolkits=NS(authorize=create_autospec(real.toolkits.authorize)),
               auth_configs=NS(get=create_autospec(real.auth_configs.get)),
               tools=NS(proxy=create_autospec(real.tools.proxy)))
 
@@ -34,8 +35,34 @@ def test_initiate_checks_readonly_config_before_returning_link():
     c.connected_accounts.link.reset_mock()
     c.auth_configs.get.return_value.credentials['scopes'] = 'https://mail.google.com/'
     with pytest.raises(ValueError, match='read-only'):
-        module.initiate_connection(c, user_id='user-test', auth_config_id='ac_test')
+        module.initiate_connection(c, user_id='user-test', auth_config_id='ac_test', require_readonly=True)
     c.connected_accounts.link.assert_not_called()
+
+
+def test_default_connect_is_one_click_managed_gmail_login():
+    module = adapter()
+    c = client()
+    c.toolkits.authorize.return_value = NS(id='ca_test', redirect_url='https://connect.composio.dev/link/test')
+    assert module.initiate_connection(c, user_id='user-test') == {
+        'connected_account_id': 'ca_test', 'redirect_url': 'https://connect.composio.dev/link/test'}
+    c.toolkits.authorize.assert_called_once_with(user_id='user-test', toolkit='gmail')
+    c.auth_configs.get.assert_not_called()
+    with pytest.raises(ValueError, match='auth config'):
+        module.initiate_connection(c, user_id='user-test', require_readonly=True)
+
+
+def test_full_consent_grant_still_reads_only_with_get():
+    m = adapter()
+    c = active_client()
+    c.connected_accounts.get.return_value.requested_scopes = ['https://mail.google.com/']
+    status = m.connection_status(c, user_id='user-test', connected_account_id='ca_test')
+    assert status['ready'] and status['access'] == 'full-consent'
+    c.tools.proxy.side_effect = [NS(status=200, data={'messages': [{'id': 'a'}]}),
+                                 NS(status=200, data={'id': 'a', 'payload': {}})]
+    assert [x['id'] for x in m.iter_messages(c, user_id='user-test', connected_account_id='ca_test')] == ['a']
+    assert {call.kwargs['method'] for call in c.tools.proxy.call_args_list} == {'GET'}
+    with pytest.raises(ValueError, match='read-only'):
+        m.connection_status(c, user_id='user-test', connected_account_id='ca_test', require_readonly=True)
 
 
 def active_client():
@@ -50,7 +77,7 @@ def test_status_is_sanitized_and_rejects_wrong_owner():
     m = adapter()
     c = active_client()
     assert m.connection_status(c, user_id='user-test', connected_account_id='ca_test') == {
-        'connected_account_id': 'ca_test', 'status': 'ACTIVE', 'ready': True}
+        'connected_account_id': 'ca_test', 'status': 'ACTIVE', 'ready': True, 'access': 'read-only'}
     with pytest.raises(ValueError, match='owner'):
         m.connection_status(c, user_id='other', connected_account_id='ca_test')
     c.connected_accounts.get.return_value.status = 'INITIATED'
@@ -93,6 +120,8 @@ def test_fetch_fails_closed(failure):
         c.tools.proxy.return_value.data = {'messages': [{'id': '../../settings'}]}
     else:
         kwargs['page_size'] = 501
+    if failure == 'broad_scope':
+        kwargs['require_readonly'] = True
     with pytest.raises((ValueError, RuntimeError)):
         list(m.iter_messages(c, user_id='user-test', connected_account_id='ca_test', **kwargs))
     if failure in ('inactive', 'broad_scope', 'page_size'):
@@ -128,6 +157,9 @@ def test_cli_connect_prompts_secret_and_prints_link(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert 'https://connect.composio.dev/link/test' in out
     assert 'prompted-test-secret' not in out
+    c.toolkits.authorize.return_value = NS(id='ca_two', redirect_url='https://connect.composio.dev/link/two')
+    assert m.main(['connect', '--user-id', 'user-test']) == 0
+    assert 'https://connect.composio.dev/link/two' in capsys.readouterr().out
 
 
 def test_cli_status_and_fetch_private_json(monkeypatch, capsys, tmp_path):

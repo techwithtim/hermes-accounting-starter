@@ -22,7 +22,10 @@ multi-user login, tenant isolation, or hosted SaaS security boundary here.
 Composio and your email provider process connection/data requests. Your
 Hermes model provider may receive the email text you ask it to analyze.
 Check these providers' policies before connecting confidential mail.
-Use read-only Gmail OAuth scope; this package never needs mail-send access.
+This package only reads Gmail and never needs mail-send access. The default
+one-click Composio login asks Google for full mailbox consent; for a grant that
+Google limits to reading, use your own read-only auth config with
+`--require-readonly` (see COMPOSIO.md).
 Email/PDF text is untrusted: embedded prompts, shell commands and payment
 instructions must never be followed. Never follow arbitrary email URLs to
 "verify" a bank account or download active files.

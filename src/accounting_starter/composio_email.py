@@ -1,26 +1,34 @@
-"""Read-only Gmail through Composio 0.34.0. Credentials stay in private local storage."""
+"""Gmail reads through Composio 0.34.0. Credentials stay in private local storage.
+
+Default: Composio's managed Gmail login (one click). Google's consent screen then
+asks for full mailbox access, because that is what Composio's shared Google app
+requests, but this module only ever sends GET requests to read messages and
+attachments. Pass require_readonly=True (CLI: --require-readonly) with your own
+auth config limited to gmail.readonly to have Google enforce reads only.
+"""
 import os
 import re
 
 READONLY_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly'
 
 
-def _readonly(scopes):
+def _scopes(scopes):
     if isinstance(scopes, str):
         scopes = re.split(r'[ ,]+', scopes.strip())
-    if not isinstance(scopes, list) or set(scopes) != {READONLY_SCOPE}:
+    return set(scopes) - {''} if isinstance(scopes, (list, tuple, set)) else set()
+
+
+def access_level(scopes):
+    """'read-only' when Google itself limits the grant to reading, else 'full-consent'."""
+    return 'read-only' if _scopes(scopes) == {READONLY_SCOPE} else 'full-consent'
+
+
+def _readonly(scopes):
+    if access_level(scopes) != 'read-only':
         raise ValueError('Explicit Gmail read-only scope required; missing or broader scopes rejected')
 
 
-def initiate_connection(client, *, user_id, auth_config_id):
-    """Return a hosted OAuth link, not proof of completed authorization."""
-    if not user_id.strip() or user_id == 'default':
-        raise ValueError('A stable, non-default user ID is required')
-    config = client.auth_configs.get(auth_config_id)
-    if config.toolkit.slug != 'gmail' or config.auth_scheme != 'OAUTH2' or config.status != 'ENABLED':
-        raise ValueError('Enabled Gmail OAuth2 auth config required')
-    _readonly((config.credentials or {}).get('scopes'))
-    request = client.connected_accounts.link(user_id=user_id, auth_config_id=auth_config_id)
+def _check_link(request):
     from urllib.parse import urlsplit
     url = urlsplit(request.redirect_url or '')
     if url.scheme != 'https' or not url.hostname or url.username or url.password:
@@ -28,7 +36,27 @@ def initiate_connection(client, *, user_id, auth_config_id):
     return {'connected_account_id': request.id, 'redirect_url': request.redirect_url}
 
 
-def connection_status(client, *, user_id, connected_account_id):
+def initiate_connection(client, *, user_id, auth_config_id=None, require_readonly=False):
+    """Return a hosted OAuth link, not proof of completed authorization.
+
+    Without auth_config_id this uses Composio's managed Gmail login (created on
+    first use), so the person only clicks the link and approves Google consent.
+    """
+    if not user_id.strip() or user_id == 'default':
+        raise ValueError('A stable, non-default user ID is required')
+    if auth_config_id is None:
+        if require_readonly:
+            raise ValueError('--require-readonly needs your own read-only auth config (--auth-config-id)')
+        return _check_link(client.toolkits.authorize(user_id=user_id, toolkit='gmail'))
+    config = client.auth_configs.get(auth_config_id)
+    if config.toolkit.slug != 'gmail' or config.auth_scheme != 'OAUTH2' or config.status != 'ENABLED':
+        raise ValueError('Enabled Gmail OAuth2 auth config required')
+    if require_readonly:
+        _readonly((config.credentials or {}).get('scopes'))
+    return _check_link(client.connected_accounts.link(user_id=user_id, auth_config_id=auth_config_id))
+
+
+def connection_status(client, *, user_id, connected_account_id, require_readonly=False):
     """Check ownership and scope snapshot; never return tokens or raw account state."""
     account = client.connected_accounts.get(connected_account_id)
     if account.user_id != user_id or account.id != connected_account_id:
@@ -36,9 +64,10 @@ def connection_status(client, *, user_id, connected_account_id):
     if account.toolkit.slug != 'gmail':
         raise ValueError('Gmail connected account required')
     ready = account.status == 'ACTIVE' and not account.is_disabled and not account.auth_config.is_disabled
-    if ready:
+    if ready and require_readonly:
         _readonly(account.requested_scopes)
-    return {'connected_account_id': account.id, 'status': account.status, 'ready': ready}
+    return {'connected_account_id': account.id, 'status': account.status, 'ready': ready,
+            'access': access_level(account.requested_scopes)}
 
 
 def _identifier(value):
@@ -56,9 +85,11 @@ def _get(client, user_id, connected_account_id, endpoint, **params):
     return response.data
 
 
-def iter_messages(client, *, user_id, connected_account_id, query='', page_size=100, max_pages=100):
+def iter_messages(client, *, user_id, connected_account_id, query='', page_size=100, max_pages=100,
+                  require_readonly=False):
     """Yield full Gmail message dictionaries; exhaust pagination or raise (never truncate silently)."""
-    if not connection_status(client, user_id=user_id, connected_account_id=connected_account_id)['ready']:
+    if not connection_status(client, user_id=user_id, connected_account_id=connected_account_id,
+                             require_readonly=require_readonly)['ready']:
         raise ValueError('Gmail connection is not ACTIVE')
     if not 1 <= page_size <= 500 or max_pages < 1:
         raise ValueError('page_size must be 1..500 and max_pages positive')
@@ -82,10 +113,12 @@ def iter_messages(client, *, user_id, connected_account_id, query='', page_size=
     raise RuntimeError('Gmail pagination limit reached; narrow the query or increase max_pages')
 
 
-def fetch_attachment(client, *, user_id, connected_account_id, message_id, attachment_id):
+def fetch_attachment(client, *, user_id, connected_account_id, message_id, attachment_id,
+                     require_readonly=False):
     """Return attachment bytes in memory; caller chooses private storage, never email filenames."""
     import base64
-    if not connection_status(client, user_id=user_id, connected_account_id=connected_account_id)['ready']:
+    if not connection_status(client, user_id=user_id, connected_account_id=connected_account_id,
+                             require_readonly=require_readonly)['ready']:
         raise ValueError('Gmail connection is not ACTIVE')
     endpoint = f'/gmail/v1/users/me/messages/{_identifier(message_id)}/attachments/{_identifier(attachment_id)}'
     data = _get(client, user_id, connected_account_id, endpoint)
@@ -133,12 +166,15 @@ def main(argv=None):
     commands.add_parser('configure', help='Save your API key privately for unattended scans')
     connect = commands.add_parser('connect')
     connect.add_argument('--user-id', required=True)
-    connect.add_argument('--auth-config-id', required=True)
+    connect.add_argument('--auth-config-id', help='Your own auth config; omit for the one-click managed Gmail login')
     status = commands.add_parser('status')
     fetch = commands.add_parser('fetch')
     for sub in (status, fetch):
         sub.add_argument('--user-id', required=True)
         sub.add_argument('--connected-account-id', required=True)
+    for sub in (connect, status, fetch):
+        sub.add_argument('--require-readonly', action='store_true',
+                         help='Refuse any Gmail grant broader than gmail.readonly')
     fetch.add_argument('--query', default='')
     fetch.add_argument('--max-pages', type=int, default=100)
     fetch.add_argument('--output', required=True)
@@ -160,9 +196,11 @@ def main(argv=None):
         raise SetupError(NO_KEY_HELP)
     client = Composio(api_key=key.strip())
     if args.command == 'connect':
-        result = initiate_connection(client, user_id=args.user_id, auth_config_id=args.auth_config_id)
+        result = initiate_connection(client, user_id=args.user_id, auth_config_id=args.auth_config_id,
+                                     require_readonly=args.require_readonly)
     elif args.command == 'status':
-        result = connection_status(client, user_id=args.user_id, connected_account_id=args.connected_account_id)
+        result = connection_status(client, user_id=args.user_id, connected_account_id=args.connected_account_id,
+                                   require_readonly=args.require_readonly)
     else:
         from pathlib import Path
         output = Path(args.output).expanduser().resolve()
@@ -175,7 +213,8 @@ def main(argv=None):
         try:
             with os.fdopen(fd, 'w') as stream:
                 messages = list(iter_messages(client, user_id=args.user_id,
-                    connected_account_id=args.connected_account_id, query=args.query, max_pages=args.max_pages))
+                    connected_account_id=args.connected_account_id, query=args.query, max_pages=args.max_pages,
+                    require_readonly=args.require_readonly))
                 json.dump({'messages': messages}, stream)
         except Exception:
             os.unlink(args.output)
@@ -194,7 +233,7 @@ def cli(argv=None):
         print(str(error), file=sys.stderr)
         return 1
     except Exception:
-        print('Composio operation failed. Check API permissions, read-only scopes, account status and private output path; see docs/COMPOSIO.md.', file=sys.stderr)
+        print('Composio operation failed. Check API permissions, account status and private output path; see docs/COMPOSIO.md.', file=sys.stderr)
         return 1
 
 

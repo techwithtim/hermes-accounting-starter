@@ -22,7 +22,7 @@ No Discord account required. No creator's real books or private policies include
 - Source IDs and conflict checks for repeat-safe ingestion; ambiguous items go
   to review rather than guessed totals.
 - Separate empty live ledger and explicitly fictional demo database.
-- Composio SDK installed with the package; read-only Gmail connection/status,
+- Composio SDK installed with the package; one-click Gmail connection/status,
   paginated message retrieval and attachment retrieval helper.
 - Generic Hermes bookkeeping skill and hourly/daily scan job templates.
 - Installer, copy-paste agent prompt, security guide, VPS instructions,
@@ -37,13 +37,15 @@ guides you through connecting your email.
 The account-specific human steps cannot be skipped:
 1. Create your own Composio account/project and save your API key yourself over SSH
    (`uv run python -m accounting_starter.composio_email configure`).
-2. Create the documented Gmail read-only auth configuration.
-3. Open the connection link and approve Google consent.
-4. Review the first scan before enabling recurring scans.
+2. Open the connection link and approve Google consent (Composio's managed
+   Gmail login; no Google Cloud setup).
+3. Review the first scan before enabling recurring scans.
 
-**Important:** custom read-only scopes may require your own Google OAuth app
-or Composio support approval. This is not guaranteed to be a five-second setup.
-See [the exact Composio guide](docs/COMPOSIO.md). Existing Hermes model access,
+**About Gmail access:** Google's consent screen asks for full mailbox access,
+because that is what Composio's shared Google app requests. This package only
+ever reads (fixed GET calls, no send, delete or label code). If you want Google
+to enforce read-only, use your own OAuth app with `--require-readonly`; see
+[the exact Composio guide](docs/COMPOSIO.md). Existing Hermes model access,
 terminal access and package-download connectivity are prerequisites. Composio
 and LLM usage are subject to their respective plans/charges.
 

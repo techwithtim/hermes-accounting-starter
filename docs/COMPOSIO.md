@@ -1,4 +1,4 @@
-# Gmail onboarding through Composio (read-only)
+# Gmail onboarding through Composio
 
 ## What is implemented and verified
 
@@ -11,7 +11,7 @@ Composio Cloud still holds/refreshes OAuth credentials and handles mail payloads
 review that vendor's custody/retention policies before using financial email.
 
 Tests exercise the installed SDK signatures, real SDK HTTP serialization via
-`httpx.MockTransport`, pagination, ownership checks, scope rejection, attachment
+`httpx.MockTransport`, pagination, ownership checks, optional read-only scope enforcement, attachment
 decoding, and CLI private output. Test responses are explicit synthetic fixtures.
 **No real API key, Google account authorization, or live email fetch was tested.**
 A successful test suite is not an OAuth verification. The operator must complete
@@ -31,28 +31,32 @@ the following account-specific steps.
    never overwritten: to rotate, revoke the old key, remove this file explicitly,
    and configure again. The file is plaintext; use disk encryption or your secret
    manager for stronger protection. Arbitrary `.env` files are not loaded.
-2. In Auth Configs, create a dedicated **Gmail / OAuth2** config with exactly
-   `https://www.googleapis.com/auth/gmail.readonly` as its scopes. Copy its
-   `ac_...` ID. Do **not** use the default Gmail scope bundle, `gmail.modify`,
-   `gmail.send`, or `https://mail.google.com/`. Tool filters alone do not remove
-   OAuth write permission. The adapter rejects a missing, redacted, or broader
-   `credentials.scopes` value rather than guessing it is safe.
-3. Managed OAuth is possible only if Composio's managed Google app supports that
-   exact scope set: official docs explicitly say to confirm non-default scope
-   approval with Composio support. Otherwise use your own Google OAuth app:
-   enable Gmail API in your Google project, configure the consent screen/test
-   users as applicable, register an OAuth client, copy the **exact redirect URI
-   displayed in the Composio dashboard** into Google, and put the client ID and
-   secret in the Composio auth config. Complete any Google verification required
-   for your deployment/restricted Gmail scopes. A Workspace admin may need to
-   approve the app. Do not broaden scopes to work around a blocked consent screen.
+2. Nothing else to set up for Gmail. `connect` without `--auth-config-id` uses
+   Composio's **managed Gmail login**: Composio creates the auth config on first
+   use and returns a link, and the person clicks it and approves Google consent.
+   Google's screen will ask for full mailbox access, because that is the scope
+   Composio's shared Google app requests. This package still only reads: every
+   Gmail call it makes is a fixed `GET` to the messages or attachments
+   endpoints, and it has no send, draft, delete, label or mark-read code.
+   `status` reports `"access": "full-consent"` for this kind of grant.
+3. **Optional, stricter:** to have Google itself block anything but reading,
+   create your own Gmail / OAuth2 auth config with exactly
+   `https://www.googleapis.com/auth/gmail.readonly` as its scopes (this usually
+   means your own Google OAuth app: enable the Gmail API, configure the consent
+   screen and test users, register an OAuth client, and copy the exact redirect
+   URI shown in the Composio dashboard into Google). Then pass
+   `--auth-config-id ac_... --require-readonly` to `connect`, `status` and
+   `fetch`. With that flag the adapter refuses any grant broader than
+   `gmail.readonly`, and `status` reports `"access": "read-only"`. Expect 30-60
+   minutes of Google Cloud setup for this path.
 4. Choose a stable local owner ID (e.g. a generated UUID), **not `default`** and
    preferably not an email address. Use the same owner for every command for
    that connection. These IDs are not passwords, but keep account mappings
    private. For a multi-user service, derive owner/account IDs from authenticated
    server-side mappings, never from an LLM or untrusted browser input.
-5. The API key must be authorized for auth-config reads, connected-account
-   reads/listing, Connect Link creation, and Proxy Execute. Composio labels the
+5. The API key must be authorized for auth-config reads (and creation, for the
+   managed login), connected-account reads/listing, Connect Link creation, and
+   Proxy Execute. Composio labels the
    proxy permission **“Proxy execute (Legacy) → Write only”** even though the
    encapsulated Gmail request here is GET. This is not Gmail write permission.
    Configure only the required project capabilities. The exact Connect Link
@@ -60,10 +64,10 @@ the following account-specific steps.
    endpoint's project-key permission mapping. Do not enable Gmail send/delete
    tools. Default full-access project keys are broader than this adapter needs.
 
-Scopes on an auth config affect new connections, not existing grants. Revoke an
-old broad Google grant in Google account settings and create a fresh read-only
-connection rather than assuming editing the config narrows the old grant. The
-adapter checks `requested_scopes` on ACTIVE accounts; this is the server's
+Scopes on an auth config affect new connections, not existing grants. To move
+from the managed login to read-only, revoke the old Google grant in Google
+account settings and connect again with your read-only config. With
+`--require-readonly` the adapter checks `requested_scopes` on ACTIVE accounts; this is the server's
 requested-scope snapshot, **not independent proof of all historical Google grants**.
 Older connections without that snapshot fail closed. If Composio stops returning
 the deprecated `user_id` ownership field, this version also fails closed; update
@@ -86,8 +90,11 @@ Do not enable shell tracing or SDK debug logs around secrets or email.
 
 ```bash
 uv run python -m accounting_starter.composio_email connect \
-  --user-id YOUR_STABLE_OWNER_ID --auth-config-id ac_YOUR_CONFIG
+  --user-id YOUR_STABLE_OWNER_ID
 ```
+
+(Strict mode: add `--auth-config-id ac_YOUR_CONFIG --require-readonly`, and
+pass `--require-readonly` to `status` and `fetch` too.)
 
 The JSON result has `connected_account_id` and `redirect_url`. Open that exact
 HTTPS link locally and complete Google sign-in/consent yourself. Do not share
@@ -140,15 +147,17 @@ From `accounting_starter.composio_email`:
 
 ```python
 client_from_env()  # -> composio.Composio; requires nonempty COMPOSIO_API_KEY
-initiate_connection(client, *, user_id, auth_config_id)
+initiate_connection(client, *, user_id, auth_config_id=None, require_readonly=False)
 # -> {"connected_account_id": str, "redirect_url": str}
-connection_status(client, *, user_id, connected_account_id)
-# -> {"connected_account_id": str, "status": str, "ready": bool}
+# auth_config_id=None uses toolkits.authorize(toolkit="gmail") (managed login)
+connection_status(client, *, user_id, connected_account_id, require_readonly=False)
+# -> {"connected_account_id": str, "status": str, "ready": bool,
+#     "access": "read-only" | "full-consent"}
 iter_messages(client, *, user_id, connected_account_id,
-              query="", page_size=100, max_pages=100)
+              query="", page_size=100, max_pages=100, require_readonly=False)
 # -> iterator of full Gmail message dicts; page_size 1..500
 fetch_attachment(client, *, user_id, connected_account_id,
-                 message_id, attachment_id)
+                 message_id, attachment_id, require_readonly=False)
 # -> decoded bytes in memory, never a file or URL
 main(argv=None)  # -> 0 on success; exceptions propagate for embedding/tests
 cli(argv=None)   # terminal boundary: sanitized error + return 1 on exception
@@ -173,8 +182,8 @@ base64url. No attachment execution or automatic document parsing is provided.
 - [Gmail toolkit](https://docs.composio.dev/toolkits/gmail)
 - [Gmail messages.list](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/list)
 - [Gmail attachments.get](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages.attachments/get)
-- Installed official `composio==0.34.0` source: `connected_accounts.link/get`,
-  `auth_configs.get`, `tools.proxy`, and generated response models. No legacy
+- Installed official `composio==0.34.0` source: `toolkits.authorize`,
+  `connected_accounts.link/get`, `auth_configs.get`, `tools.proxy`, and generated response models. No legacy
   `composio_core`, invented toolkit slugs, or unversioned dependency was used.
 
 Offline verification: `uv run --extra dev pytest tests/test_composio_email.py -q`.

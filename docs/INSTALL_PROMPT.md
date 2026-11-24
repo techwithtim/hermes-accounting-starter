@@ -30,10 +30,12 @@ exact SSH tunnel command for my laptop. Offer to keep the dashboard running
 with the systemd user service in docs/DEPLOYMENT.md.
 
 Then connect my email following docs/COMPOSIO.md. Walk me through creating my
-own Composio account, API key and Gmail auth config step by step. I will save
-the API key myself over SSH with the configure command, never in this chat.
-Then generate my connection link, wait for me to approve Google consent, and
-check status and one small real fetch before saying email is connected.
+own Composio account and API key. I will save the API key myself over SSH with
+the configure command, never in this chat. Then run connect without an auth
+config ID (Composio's one-click Gmail login), give me the link, wait for me to
+approve Google consent, and check status and one small real fetch before
+saying email is connected. Tell me that Google will show a full mailbox access
+screen but this package only reads mail.
 Use a random UUID as my owner ID and save it, with my connected account ID,
 in ~/.local/share/hermes-accounting-starter/connection.md.
 
@@ -48,10 +50,11 @@ dashboard publicly, or put demo records into my real books.
 What the person still does by hand (no prompt can do these for them):
 1. Sign up for Composio and create an API key.
 2. Run the `configure` command over SSH to save that key privately.
-3. Create the Gmail auth config (and, if Composio requires it for read-only
-   access, a Google OAuth app). See [COMPOSIO.md](COMPOSIO.md).
-4. Click the connection link and approve Google consent.
-5. Approve the first scan before recurring jobs are created.
+3. Click the connection link and approve Google consent.
+4. Approve the first scan before recurring jobs are created.
+
+Want Google itself to enforce read-only? That is an optional stricter setup
+with your own Google OAuth app; see [COMPOSIO.md](COMPOSIO.md).
 
 The Hermes agent must already have working model access. Composio and model
 usage are billed by those providers.
