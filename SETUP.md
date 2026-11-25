@@ -29,17 +29,21 @@ If it fails twice, show the person the last lines of the error and stop.
 
 ## 2. Hand over (then stop)
 
-Send this message, word for word, and stop:
+Send this message, word for word, and stop. If the installer printed a
+`Rescan link:` line, put that link in place of the instruction in item 1.
 
-> Your bookkeeping system is installed. Two quick things:
+> Your bookkeeping system is installed. Three quick things:
 >
-> 1. In your Hermes dashboard, open **MCP servers**, find **composio**, click
+> 1. Load the new Accounting tab: in your browser, open your Hermes dashboard
+>    address with `/api/dashboard/plugins/rescan` added to the end (for
+>    example `http://your-server-ip:port/api/dashboard/plugins/rescan`). You
+>    will see a short `"ok": true` message. Go back to the dashboard and
+>    refresh: **Accounting** now appears in the menu. Click **Demo data**
+>    there to see an example.
+> 2. In the dashboard, open **MCP servers**, find **composio**, click
 >    **Authorize** and sign in to Composio (create a free account if asked).
-> 2. Start a **New chat** and paste:
+> 3. Start a **New chat** and paste:
 >    `Continue my bookkeeping setup from step 3 of ~/apps/hermes-accounting-starter/SETUP.md`
->
-> Your books are already in the **Accounting** tab of the dashboard. Click
-> **Demo data** there to see an example.
 
 ## 3. Connect Gmail (the new chat starts here)
 

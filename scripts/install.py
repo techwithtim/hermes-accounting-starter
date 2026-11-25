@@ -132,7 +132,23 @@ def main():
     if args.skip_hermes:
         print('Start dashboard: '+shlex.join([str(exe), '--data-dir', str(data), 'serve']))
         return
+    public = dashboard_url(home)
+    if public:
+        print(f'Rescan link: {public}/api/dashboard/plugins/rescan')
     print('Next: follow step 2 of SETUP.md (send the hand-over message, then stop).')
+
+
+def dashboard_url(home):
+    """The dashboard's public address if Hermes knows it (env or dashboard.public_url), else None."""
+    url = os.environ.get('HERMES_DASHBOARD_PUBLIC_URL', '').strip()
+    if not url:
+        try:
+            import yaml
+            config = yaml.safe_load((home/'config.yaml').read_text()) or {}
+            url = str((config.get('dashboard') or {}).get('public_url') or '').strip()
+        except Exception:
+            url = ''
+    return url.rstrip('/') if url.startswith(('http://', 'https://')) else None
 
 
 if __name__ == '__main__':

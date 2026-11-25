@@ -10,10 +10,12 @@ Set up my bookkeeping system. I trust this repository, so do not audit its code 
 The agent runs one install command, then follows [SETUP.md](../SETUP.md).
 
 What you do yourself:
-1. Click **Authorize** on the `composio` MCP server in the Hermes dashboard
+1. Open your dashboard address with `/api/dashboard/plugins/rescan` added to
+   the end, then refresh the dashboard: the **Accounting** tab appears.
+2. Click **Authorize** on the `composio` MCP server in the Hermes dashboard
    and sign in to Composio (free account; no API key).
-2. Start a New chat when asked and paste the line Hermes gives you.
-3. Open the Gmail link Hermes gives you and approve Google's screen.
+3. Start a New chat when asked and paste the line Hermes gives you.
+4. Open the Gmail link Hermes gives you and approve Google's screen.
 
 Hermes then scans recent mail and shows you what it found before booking
 anything. Composio and model usage are billed by those providers.
