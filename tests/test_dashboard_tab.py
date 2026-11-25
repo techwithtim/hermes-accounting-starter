@@ -91,7 +91,7 @@ def test_reports_keep_currencies_apart_and_add_up(tmp_path):
     ledger.seed_demo()
     data = reports.build(ledger)
     usd, others = data['primary'], data['others']
-    assert usd['currency'] == 'USD' and [o['currency'] for o in others] == ['EUR']
+    assert usd['currency'] == 'USD' and others == []
     in_window = [i for i in ledger.list_records('invoices')
                  if i['currency'] == 'USD' and i['issued_date'][:7] in data['months']]
     assert usd['revenue'] == sum(i['amount_minor'] for i in in_window)
@@ -100,7 +100,7 @@ def test_reports_keep_currencies_apart_and_add_up(tmp_path):
     assert usd['outstanding'] == sum(i['balance_minor'] for i in ledger.list_records('invoices') if i['currency'] == 'USD')
     assert usd['growth'] > 0 and usd['overdue_count'] >= 1
     html = render_page(ledger, 'reports', embed=True)
-    assert '<svg' in html and 'Month by month' in html and 'EUR month by month' in html
+    assert '<svg' in html and 'Month by month' in html and '€' not in html
     overview = render_page(ledger, '', embed=True)
     assert 'You kept' in overview and 'Who owes you' in overview and 'DEMO' not in overview
 

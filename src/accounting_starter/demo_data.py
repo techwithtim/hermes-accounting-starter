@@ -16,7 +16,7 @@ CUSTOMERS = [
     ('Copperleaf Coffee Co.', 'USD'),
     ('Meridian Outdoor', 'USD'),
     ('Kestrel Analytics', 'USD'),
-    ('Lumen Atelier', 'EUR'),
+    ('Lumen Atelier', 'USD'),
 ]
 
 VENDORS = [
@@ -144,7 +144,7 @@ def build(today=None):
             expense('Brightwork Hardware', month, 19, 240000 if i == 3 else 162000,
                     'Laptop for new hire' if i == 3 else 'Display and test devices')
         if i % 3 == 0:
-            expense('Ana Ribeiro', month, 27, 36000, 'Illustration licence for Lumen Atelier', currency='EUR')
+            expense('Ana Ribeiro', month, 27, 36000, 'Illustration licence for Lumen Atelier')
 
     last = months[-1]
     reviews = [
@@ -159,7 +159,7 @@ def build(today=None):
              resolution='Same receipt; kept one expense'),
         dict(key='review-5', reason='Invoice currency unclear',
              evidence='Lumen Atelier invoice PDF without currency symbol', status='resolved',
-             resolution='Confirmed EUR from the contract'),
+             resolution='Confirmed USD from the contract'),
     ]
     documents = [
         dict(key='doc-1', title='Halcyon Health master services agreement', url=''),
