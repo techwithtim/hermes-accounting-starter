@@ -30,22 +30,24 @@ No Discord account required. No creator's real books or private policies include
 
 ## Start with one prompt
 
-Copy [the installation prompt](docs/INSTALL_PROMPT.md) into a **working Hermes
-agent**. Hermes inspects and installs the package, starts the dashboard, then
-guides you through connecting your email.
+Paste this into a **working Hermes agent**:
 
-The account-specific human steps cannot be skipped:
-1. Create your own Composio account/project and save your API key yourself over SSH
-   (`uv run python -m accounting_starter.composio_email configure`).
-2. Open the connection link and approve Google consent (Composio's managed
-   Gmail login; no Google Cloud setup).
-3. Review the first scan before enabling recurring scans.
+```text
+Set up the bookkeeping system from https://github.com/techwithtim/hermes-accounting-starter for me. Clone it into ~/apps/hermes-accounting-starter, then open SETUP.md in that folder and follow it step by step. Stop and ask me whenever it says a step is mine, and never ask me to paste an API key into this chat.
+```
+
+Hermes follows [SETUP.md](SETUP.md): it installs the package, starts the
+dashboards, then walks you through the three things only you can do:
+1. Sign up for Composio and save your API key with one command over SSH.
+2. Click the Gmail link and approve Google consent (Composio's one-click
+   login; no Google Cloud setup).
+3. Approve the first scan before recurring scans are turned on.
 
 **About Gmail access:** Google's consent screen asks for full mailbox access,
 because that is what Composio's shared Google app requests. This package only
 ever reads (fixed GET calls, no send, delete or label code). If you want Google
 to enforce read-only, use your own OAuth app with `--require-readonly`; see
-[the exact Composio guide](docs/COMPOSIO.md). Existing Hermes model access,
+[the Composio guide](docs/COMPOSIO.md). Existing Hermes model access,
 terminal access and package-download connectivity are prerequisites. Composio
 and LLM usage are subject to their respective plans/charges.
 
