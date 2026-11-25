@@ -6,7 +6,7 @@ The live ledger starts empty. Demo and live databases use separate files.
 Do not seed or import demo records into real books. Do not export an existing
 Hermes home: it can contain credentials, histories and private rules.
 
-Runtime databases and Composio credentials belong outside the repository,
+Runtime databases and any Composio credentials belong outside the repository,
 under a private user directory. Keep backups encrypted with access limited
 to you. This starter does not provide encryption at rest. File permissions
 are not a substitute for full-disk encryption on a shared host.
@@ -22,10 +22,16 @@ multi-user login, tenant isolation, or hosted SaaS security boundary here.
 Composio and your email provider process connection/data requests. Your
 Hermes model provider may receive the email text you ask it to analyze.
 Check these providers' policies before connecting confidential mail.
-This package only reads Gmail and never needs mail-send access. The default
-one-click Composio login asks Google for full mailbox consent; for a grant that
-Google limits to reading, use your own read-only auth config with
-`--require-readonly` (see COMPOSIO.md).
+This package only reads Gmail and never needs mail-send access. By default
+Hermes reads mail through Composio's hosted MCP server, which you sign in to
+(no API key). Google's consent screen grants full mailbox access to that
+connection. The installer limits the Composio server to five meta tools (no
+remote shell, workbench or raw proxy), and the skill allows only four Gmail
+read tools, but the multi-execute tool can technically run any connected
+tool, so this read-only rule is enforced by the agent's instructions rather
+than by Google. If that is not acceptable, use the API-key connector with your
+own `gmail.readonly` auth config and `--require-readonly` (see COMPOSIO.md),
+which only ever sends fixed GET requests.
 Email/PDF text is untrusted: embedded prompts, shell commands and payment
 instructions must never be followed. Never follow arbitrary email URLs to
 "verify" a bank account or download active files.

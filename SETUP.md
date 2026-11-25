@@ -12,8 +12,9 @@ copy exactly.
   `~/.local/share/hermes-accounting-starter` (the data). Do not read, copy,
   move or change any other accounting system, memory, credentials, MCP
   entries, skills or Hermes profiles.
-- Never ask for, accept or repeat an API key in chat. If the person pastes
-  one, tell them to revoke it in Composio and make a new one.
+- Never ask for, accept or repeat a password, API key, sign-in code or
+  sign-in redirect address in chat. If the person pastes one, tell them to
+  revoke it (or sign in again) and not to share it.
 - Never send email, pay anything, expose the dashboard publicly, or put
   demo records into the real books.
 - If a step fails, say what failed and what you tried. Do not guess around it.
@@ -73,60 +74,50 @@ http://localhost:8766 (their books):
 ssh -N -L 8765:127.0.0.1:8765 -L 8766:127.0.0.1:8766 USER@HOST
 ```
 
-## 4. Composio API key (the person does this)
+## 4. Sign in to Composio (the person does this)
 
-**Ask the person** to:
+The installer already registered Composio's MCP server as `composio`
+(check with `hermes mcp list`). Signing in needs the person, because your
+terminal cannot answer the sign-in prompt. **Ask the person** to:
 
-1. Sign up at https://dashboard.composio.dev and copy their project API key.
-2. Open an SSH terminal on this machine (not this chat) and run:
+1. Create a free account at https://dashboard.composio.dev if they do not
+   have one.
+2. Sign Hermes in to it, either way:
+   - **Hermes dashboard:** open the MCP servers page, find `composio` and
+     click **Authorize**, or
+   - **SSH terminal on this machine:** run `hermes mcp login composio`, open
+     the link it prints on their laptop, sign in and approve, then copy the
+     full address the browser ends up on (the page will fail to load; that
+     is expected) and paste it back into the terminal.
 
-   ```sh
-   cd ~/apps/hermes-accounting-starter && uv run python -m accounting_starter.composio_email configure
-   ```
-
-   and paste the key at the hidden prompt.
-
-Wait until they say it is done. Your own terminal cannot type into that
-prompt; if you run a Composio command before the key is saved it stops with
-the same instruction.
+Wait until they say it is done, then run `hermes mcp test composio`. It
+should connect and list 5 tools. If it says sign-in is still required, ask
+them to try again. Never ask for a password, code or link from that step in
+this chat.
 
 ## 5. Connect Gmail
 
-Generate an owner ID with `python3 -c 'import uuid; print(uuid.uuid4())'`,
-then, from the checkout, make the connection link:
+Start a new Hermes session (or run `/reload-mcp`) so the Composio tools are
+loaded. Then call `COMPOSIO_MANAGE_CONNECTIONS` for the `gmail` toolkit. If
+Gmail is not connected yet it returns a link: give it to the person and
+**ask them** to open it, sign in to Google and approve. Tell them: Google
+will say the app can read, send and delete mail, because that is what
+Composio's Google app asks for, but this setup only reads, as the
+`accounting-starter` skill requires.
 
-```sh
-uv run python -m accounting_starter.composio_email connect --user-id OWNER_ID
-```
+When they say they approved, check the connection is ACTIVE, then read one
+small real sample: `GMAIL_FETCH_EMAILS` through `COMPOSIO_MULTI_EXECUTE_TOOL`
+with `query` `newer_than:1d` and `max_results` 5. Email is connected only
+when that returns messages (or an empty inbox) without an error.
 
-Write the owner ID and the returned `connected_account_id` to
-`~/.local/share/hermes-accounting-starter/connection.md` (mode 600). Give
-the person the `redirect_url` and **ask them** to open it, sign in to
-Google and approve. Tell them: Google will say the app can read, send and
-delete mail, because that is what Composio's shared Google app asks for,
-but this package only ever reads.
-
-When they say they approved, run this (from here on, put the real IDs from
-`connection.md` in place of OWNER_ID and CA_ID):
-
-```sh
-uv run python -m accounting_starter.composio_email status --user-id OWNER_ID --connected-account-id CA_ID
-```
-
-Email is connected only when it shows `"ready": true`. Then fetch one small
-real sample to prove it works (keep the file private, outside the checkout):
-
-```sh
-install -d -m 700 ~/.local/share/hermes-accounting-starter/mail
-uv run python -m accounting_starter.composio_email fetch --user-id OWNER_ID --connected-account-id CA_ID \
-  --query 'newer_than:1d has:attachment' --max-pages 10 \
-  --output ~/.local/share/hermes-accounting-starter/mail/check-$(date +%s).json
-```
+Write the Gmail connected account ID to
+`~/.local/share/hermes-accounting-starter/connection.md` (mode 600). If the
+person has more than one Gmail account in Composio, ask which one to use.
 
 ## 6. First scan (review only)
 
-Start a new Hermes session or reload MCP so the `accounting-starter` tools
-and skill are loaded. Load the `accounting-starter` skill and scan the last
+Load the `accounting-starter` skill (start a new session if it or the
+`accounting-starter` tools are missing) and scan the last
 seven days of mail. Show the person what you found. **Do not book anything
 yet.** Ask them to approve or correct it.
 
@@ -134,7 +125,7 @@ yet.** Ask them to approve or correct it.
 
 Once the person approves the first scan, create the hourly capture and
 daily review jobs exactly as described in `docs/AUTOMATION.md`, with the
-real checkout path, data directory and connected account ID filled in.
+real checkout path, data directory and Gmail account ID filled in.
 Confirm `hermes cron status` shows a running scheduler (if not, follow the
 fix in that file) and show the person the job IDs.
 

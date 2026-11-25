@@ -1,12 +1,13 @@
 # Automatic scans with Hermes
 
-The package supplies the connector, ledger tools and generic accounting skill.
+The package supplies the ledger tools and generic accounting skill; mail is
+read through the Composio MCP server the owner signed in to.
 Hermes does the interpretation; Composio does not classify receipts itself.
 This requires a running Hermes scheduler with working model access. API/model
 usage may incur charges. No email is read during installation.
 
 ## Enable after connecting
-Ask Hermes to load `accounting-starter`, verify connector status and run the
+Ask Hermes to load `accounting-starter`, verify the Gmail connection and run the
 first review-first scan. Confirm the account, lookback range, classification
 policy and scan frequency. The installer prompt includes this handoff; you
 do not need Discord or another chat integration.
@@ -30,17 +31,19 @@ hermes cron status
 is serving the profile, the jobs are saved but will never fire: start the
 Hermes gateway (`hermes gateway install`, or however your host runs Hermes)
 and check again. Hermes's in-chat cronjob tool works the same way. The job prompt must include the
-actual checkout path, data directory, connected-account ID and the user's
+actual checkout path, data directory, Gmail account ID and the user's
 approved policy. Keep delivery local unless the owner chooses a destination.
-No secrets in job prompts: the connector reads its private credential file.
+No secrets in job prompts: the Composio sign-in tokens are stored by Hermes.
+If a job reports that Composio needs sign-in again, run
+`hermes mcp login composio` (or Authorize in the dashboard).
 
 Hourly prompt template:
 
 > Work only with the Accounting Starter installation at CHECKOUT and runtime
 > directory DATA. Use its accounting-starter MCP tools, never another ledger.
-> Fetch this owner's approved Gmail connection CONNECTION over the last seven
-> days using the documented connector and a new private output file. Check
-> pagination and retrieval success. Follow accounting-starter skill. Policy:
+> Read this owner's Gmail account CONNECTION over the last seven days through
+> the Composio MCP server, using only the read tools the skill allows. Check
+> that every page was read. Follow accounting-starter skill. Policy:
 > REVIEW-FIRST unless the owner has explicitly authorized specific automatic
 > classifications here. Deduplicate by original source IDs AND economic event.
 > Queue uncertainty. Verify every write with read-back. Record actual coverage,

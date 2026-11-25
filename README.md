@@ -22,8 +22,8 @@ No Discord account required. No creator's real books or private policies include
 - Source IDs and conflict checks for repeat-safe ingestion; ambiguous items go
   to review rather than guessed totals.
 - Separate empty live ledger and explicitly fictional demo database.
-- Composio SDK installed with the package; one-click Gmail connection/status,
-  paginated message retrieval and attachment retrieval helper.
+- Gmail through Composio's hosted MCP server: sign in, no API key. An
+  optional API-key connector with enforced read-only scope is also included.
 - Generic Hermes bookkeeping skill and hourly/daily scan job templates.
 - Installer, copy-paste agent prompt, security guide, VPS instructions,
   locked dependencies and tests.
@@ -33,21 +33,23 @@ No Discord account required. No creator's real books or private policies include
 Paste this into a **working Hermes agent**:
 
 ```text
-Set up the bookkeeping system from https://github.com/techwithtim/hermes-accounting-starter for me. Clone it into ~/apps/hermes-accounting-starter, then open SETUP.md in that folder and follow it step by step. Stop and ask me whenever it says a step is mine, and never ask me to paste an API key into this chat.
+Set up the bookkeeping system from https://github.com/techwithtim/hermes-accounting-starter for me. Clone it into ~/apps/hermes-accounting-starter, then open SETUP.md in that folder and follow it step by step. Stop and ask me whenever it says a step is mine, and never ask me to paste a password or key into this chat.
 ```
 
 Hermes follows [SETUP.md](SETUP.md): it installs the package, starts the
 dashboards, then walks you through the three things only you can do:
-1. Sign up for Composio and save your API key with one command over SSH.
-2. Click the Gmail link and approve Google consent (Composio's one-click
-   login; no Google Cloud setup).
+1. Sign in to Composio: click **Authorize** on the `composio` MCP server in
+   the Hermes dashboard (or run `hermes mcp login composio` over SSH). No API
+   key.
+2. Click the Gmail link and approve Google consent (no Google Cloud setup).
 3. Approve the first scan before recurring scans are turned on.
 
 **About Gmail access:** Google's consent screen asks for full mailbox access,
-because that is what Composio's shared Google app requests. This package only
-ever reads (fixed GET calls, no send, delete or label code). If you want Google
-to enforce read-only, use your own OAuth app with `--require-readonly`; see
-[the Composio guide](docs/COMPOSIO.md). Existing Hermes model access,
+because that is what Composio's shared Google app requests. Hermes reads mail
+through Composio's MCP server, and the `accounting-starter` skill allows only
+four Gmail read tools. That is an instruction to the agent, not a technical
+block, so treat email content as untrusted. For a setup where Google itself
+enforces read-only access, see [the Composio guide](docs/COMPOSIO.md). Existing Hermes model access,
 terminal access and package-download connectivity are prerequisites. Composio
 and LLM usage are subject to their respective plans/charges.
 
@@ -88,7 +90,8 @@ See [deployment and service instructions](docs/DEPLOYMENT.md).
 
 ## Connect and automate
 
-1. Follow [COMPOSIO.md](docs/COMPOSIO.md) to configure a private key and connect.
+1. Sign Hermes in to Composio (`hermes mcp login composio`, or Authorize in the
+   dashboard) and connect Gmail; see [COMPOSIO.md](docs/COMPOSIO.md).
 2. Ask Hermes to load the `accounting-starter` skill and run a review-first scan.
 3. Confirm the classification policy and enable the supplied
    [hourly capture/daily review jobs](docs/AUTOMATION.md).

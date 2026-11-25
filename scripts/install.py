@@ -37,7 +37,8 @@ def main():
     if not args.skip_hermes:
         print('Register using hermes mcp add accounting-starter (with persistence verification).')
         commands.append([str(ROOT/'.venv/bin/python'), str(ROOT/'scripts/register_mcp.py'), str(home), str(exe), str(data)])
-    print('Install includes Composio SDK. Account creation and email OAuth require your consent.')
+        commands.append([str(ROOT/'.venv/bin/python'), str(ROOT/'scripts/register_composio.py'), str(home)])
+    print('Registers the Composio MCP server (you sign in; no API key). Email access requires your consent.')
     for command in commands:
         print(shlex.join(command))
     if args.dry_run:
@@ -60,7 +61,7 @@ def main():
     if not args.skip_hermes:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(skill_text)
-    print('Installed. Continue with SETUP.md step 3 (dashboards), then connect Gmail in step 4.')
+    print('Installed. Continue with SETUP.md step 3 (dashboards), then Composio sign-in in step 4.')
     print('Start dashboard: '+shlex.join([str(exe), '--data-dir', str(data), 'serve']))
     print('Reload MCP in a new Hermes session. Scheduled scans are opt-in; see docs/AUTOMATION.md.')
 
