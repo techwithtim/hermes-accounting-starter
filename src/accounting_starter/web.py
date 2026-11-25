@@ -37,9 +37,10 @@ def create_app(path: str | Path, *, demo: bool = False) -> FastAPI:
 
     @app.get('/', response_class=HTMLResponse)
     @app.get('/{view}', response_class=HTMLResponse)
-    def dashboard(request: Request, view: str = ''):
-        if view and view not in VIEWS:
+    def dashboard(request: Request, view: str = '', filter: str = ''):
+        try:
+            return render_page(ledger, view, demo=demo, env=templates, status_filter=filter)
+        except KeyError:
             raise HTTPException(404)
-        return render_page(ledger, view, demo=demo, env=templates)
 
     return app

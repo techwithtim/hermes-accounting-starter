@@ -10,7 +10,7 @@ def test_dashboard_shows_empty_ledger_and_currency_summary(tmp_path):
     response = client.get('/')
     assert response.status_code == 200
     assert 'Ledger' in response.text
-    assert 'Nothing booked yet' in response.text
+    assert 'Your books are ready' in response.text and 'Composio' in response.text
     assert 'Your books' in response.text
 
 

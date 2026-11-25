@@ -55,6 +55,19 @@ Existing Hermes model access,
 terminal access and package-download connectivity are prerequisites. Composio
 and LLM usage are subject to their respective plans/charges.
 
+## Connect your email
+
+1. Create a free Composio account at https://composio.dev. That gives you a
+   workspace; skip this if you already have one.
+2. In the Hermes dashboard, open **MCP servers**, find **composio**, click
+   **Authorize** and sign in with that account.
+3. Connect Gmail: in a new chat, tell Hermes "Connect my Gmail" and open the
+   link it gives you (or connect the Gmail app from your Composio dashboard).
+
+From then on Hermes reads invoices, receipts and payment emails and books
+them in the **Accounting** tab. You can also just ask it in chat, for example
+"Create an invoice for Acme for $2,000".
+
 ## Manual install
 
 Linux, Python 3.11+, [uv](https://docs.astral.sh/uv/getting-started/installation/),

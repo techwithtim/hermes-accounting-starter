@@ -115,3 +115,46 @@ def test_every_view_renders_for_empty_and_demo_ledgers(tmp_path):
         for view in ['', *VIEWS]:
             for embed in (False, True):
                 assert '<main id="main">' in render_page(ledger, view, embed=embed)
+
+
+def test_invoice_filters_and_new_markers(tmp_path):
+    from datetime import date
+    from fastapi.testclient import TestClient
+    from accounting_starter.ledger import Ledger
+    from accounting_starter.render import render_page
+    from accounting_starter.web import create_app
+    path = tmp_path/'demo.sqlite3'
+    ledger = Ledger(path).initialize()
+    ledger.seed_demo()
+    overdue = render_page(ledger, 'invoices', status_filter='overdue')
+    assert 'Overdue' in overdue and '>Paid<' not in overdue.split('</thead>')[1]
+    client = ledger.list_records('clients')[0]['id']
+    ledger.create_invoice(client, 200000, 'USD', description='Website refresh', source='chat',
+                          evidence='Requested in chat by the owner', invoice_number='INV-9001',
+                          issued_date=date.today().isoformat())
+    page = render_page(ledger, 'invoices', embed=True)
+    assert 'INV-9001' in page and 'pill-new' in page and 'data-filter="overdue"' in page
+    assert 'pill-new' in render_page(ledger, '', embed=True)
+    web = TestClient(create_app(path, demo=True))
+    assert web.get('/invoices?filter=paid').status_code == 200
+    assert web.get('/invoices?filter=bogus').status_code == 404
+    assert web.get('/expenses?filter=paid').status_code == 404
+
+
+def test_plugin_route_rejects_unknown_filter():
+    api = load(ROOT/'hermes_plugin/dashboard/plugin_api.py', 'accounting_plugin_api_filter')
+    with pytest.raises(api.HTTPException):
+        asyncio.run(api.page(view='invoices', filter='../../x'))
+    with pytest.raises(api.HTTPException):
+        asyncio.run(api.page(view='expenses', filter='paid'))
+
+
+def test_overview_sentence_reads_well_with_a_single_invoice(tmp_path):
+    from datetime import date
+    from accounting_starter.ledger import Ledger
+    from accounting_starter.render import render_page
+    ledger = Ledger(tmp_path/'ledger.sqlite3').initialize()
+    client = ledger.create_client('Acme Studio', source='chat')['id']
+    ledger.create_invoice(client, 200000, 'USD', issued_date=date.today().isoformat())
+    html = render_page(ledger, '', embed=True)
+    assert 'That is a 100% profit margin so far.' in html and 'A a' not in html

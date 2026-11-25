@@ -20,6 +20,7 @@ def main(argv=None):
     render = commands.add_parser('render', help='Print one dashboard view (used by the Hermes dashboard tab).')
     render.add_argument('view', nargs='?', default='')
     render.add_argument('--embed', action='store_true', help='Print JSON {html, css} for embedding')
+    render.add_argument('--filter', default='', help='Status filter for a view, e.g. overdue for invoices')
     args = parser.parse_args(argv)
     if args.command == 'serve' and not 1 <= args.port <= 65535:
         parser.error('--port must be between 1 and 65535')
@@ -44,10 +45,12 @@ def main(argv=None):
         from .web import create_app
         uvicorn.run(create_app(path, demo=args.demo), host='127.0.0.1', port=args.port, access_log=False)
     elif args.command == 'render':
-        from .render import VIEWS, embed_css, render_page
+        from .render import FILTERS, VIEWS, embed_css, render_page
         if args.view and args.view not in VIEWS:
             parser.error('unknown view; choose one of: ' + ', '.join(VIEWS))
-        html = render_page(ledger, args.view, demo=args.demo, embed=args.embed)
+        if args.filter and args.filter not in FILTERS.get(args.view, {}):
+            parser.error('unknown filter for this view')
+        html = render_page(ledger, args.view, demo=args.demo, embed=args.embed, status_filter=args.filter)
         print(json.dumps({'html': html, 'css': embed_css()}) if args.embed else html)
     elif args.command == 'status':
         print(json.dumps(ledger.summary(), indent=2))

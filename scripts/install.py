@@ -109,8 +109,6 @@ def main():
     target = home/'skills/accounting-starter/SKILL.md'
     source = ROOT/'skills/accounting-starter/SKILL.md'
     skill_text = source.read_text() + f'\n## Local installation\n\nCheckout: `{ROOT}`\nRuntime data: `{data}`\nPython: `{ROOT / ".venv/bin/python"}`\n'
-    if not args.skip_hermes and target.exists() and target.read_text() != skill_text:
-        parser.error('An existing customized accounting-starter skill exists; back it up and remove it before upgrading')
     commands[0][0] = uv or download_uv()
     os.umask(0o077)
     data.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -127,6 +125,11 @@ def main():
             raise SystemExit(1)
     if not args.skip_hermes:
         target.parent.mkdir(parents=True, exist_ok=True)
+        if target.exists() and target.read_text() != skill_text and '## Local installation' not in target.read_text():
+            # Not a copy this installer wrote: keep it next to the new one instead of losing it.
+            backup = target.with_name('SKILL.md.custom-backup')
+            backup.write_text(target.read_text())
+            print(f'Your edited skill was saved as {backup}')
         target.write_text(skill_text)
     print('\nINSTALLED. Ledger, demo data, MCP servers, skill and dashboard tab are ready.')
     if args.skip_hermes:

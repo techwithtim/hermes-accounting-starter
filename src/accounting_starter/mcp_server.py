@@ -22,12 +22,12 @@ def create_server(ledger: Ledger) -> FastMCP:
 
     @server.tool()
     def accounting_create_client(name: str, source_id: str | None = None, source: str = 'manual', evidence: str = '') -> dict:
-        """Create a client/counterparty from confirmed evidence."""
+        """Create a client/counterparty from confirmed evidence, or because the owner asked for it in chat."""
         return ledger.create_client(name, source_id=source_id, source=source, evidence=evidence)
 
     @server.tool()
     def accounting_create_invoice(client_id: StrictInt, amount_minor: StrictInt, currency: str, description: str = '', source_id: str | None = None, source: str = 'manual', evidence: str = '', invoice_number: str | None = None, issued_date: str | None = None, due_date: str | None = None) -> dict:
-        """Record a confirmed invoice. Amount must be positive integer minor units."""
+        """Record a confirmed invoice (from evidence, or because the owner asked for it in chat). Amount must be positive integer minor units, for example 250000 for USD 2,500.00. Dates are YYYY-MM-DD."""
         return ledger.create_invoice(client_id, amount_minor, currency, description=description, source_id=source_id, source=source, evidence=evidence, invoice_number=invoice_number, issued_date=issued_date, due_date=due_date)
 
     @server.tool()

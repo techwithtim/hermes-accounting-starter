@@ -19,3 +19,17 @@ What you do yourself:
 
 Hermes then scans recent mail and shows you what it found before booking
 anything. Composio and model usage are billed by those providers.
+
+## Connect your email
+
+1. Create a free Composio account at https://composio.dev. That gives you a
+   workspace; skip this if you already have one.
+2. In the Hermes dashboard, open **MCP servers**, find **composio**, click
+   **Authorize** and sign in with that account.
+3. Connect Gmail: in a new chat, tell Hermes "Connect my Gmail" and open the
+   link it gives you (or connect the Gmail app from your Composio dashboard).
+
+From then on Hermes reads invoices, receipts and payment emails and books
+them in the **Accounting** tab. You can also just ask it in chat, for example
+"Create an invoice for Acme for $2,000".
+

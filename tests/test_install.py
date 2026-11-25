@@ -28,8 +28,12 @@ def test_skill_install_records_paths_and_preserves_customization(tmp_path, monke
     assert str(ROOT) in target.read_text()
     assert str(data) in target.read_text()
     mod.main()  # repeat must work without losing the generated paths
+    # An older generated copy (the skill text changed in a later release) is upgraded in place.
+    target.write_text('old skill text\n## Local installation\n\nCheckout: `/x`\n')
+    mod.main()
+    assert str(data) in target.read_text() and not (target.parent/'SKILL.md.custom-backup').exists()
+    # A hand-edited skill is kept as a backup, and the install still completes.
     target.write_text('my custom policy')
-    import pytest
-    with pytest.raises(SystemExit):
-        mod.main()
-    assert target.read_text() == 'my custom policy'
+    mod.main()
+    assert (target.parent/'SKILL.md.custom-backup').read_text() == 'my custom policy'
+    assert str(data) in target.read_text()

@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException
 router = APIRouter()
 HERE = Path(__file__).resolve().parent
 VIEWS = {'', 'reports', 'invoices', 'expenses', 'payments', 'clients', 'reviews', 'documents', 'audit'}
+FILTERS = {'invoices': {'open', 'overdue', 'paid'}}
 
 
 def _settings():
@@ -23,14 +24,14 @@ def _settings():
 
 
 @router.get('/page')
-async def page(view: str = '', demo: bool = False):
-    if view not in VIEWS:
+async def page(view: str = '', demo: bool = False, filter: str = ''):
+    if view not in VIEWS or (filter and filter not in FILTERS.get(view, ())):
         raise HTTPException(404, 'Unknown view')
     settings = _settings()
     command = [settings['executable'], '--data-dir', settings['data_dir']]
     if demo:
         command.append('--demo')
-    command += ['render', '--embed'] + ([view] if view else [])
+    command += ['render', '--embed'] + ([view] if view else []) + (['--filter', filter] if filter else [])
     # A clean environment: Hermes's own PYTHONPATH would make the package load
     # Hermes's libraries instead of its own.
     env = {'PATH': '/usr/local/bin:/usr/bin:/bin', 'HOME': os.environ.get('HOME', ''),

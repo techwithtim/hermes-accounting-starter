@@ -36,11 +36,26 @@ def templates():
     env.filters['cash'] = charts.money
     env.filters['day'] = reports.date_label
     env.filters['monthname'] = lambda m: reports.month_label(m, short=False)
+    env.filters['initials'] = initials
+    env.filters['hue'] = hue
     return env
 
 
-def _cell(text, cls=''):
-    return {'text': text, 'cls': cls}
+def _cell(text, cls='', avatar=None, new=False):
+    return {'text': text, 'cls': cls, 'avatar': avatar, 'new': new}
+
+
+def initials(name):
+    words = [w for w in str(name).replace('&', ' ').split() if w[:1].isalnum()]
+    return ''.join(w[0] for w in words[:2]).upper() or '?'
+
+
+def hue(name):
+    """One of six palette tones, stable per name."""
+    return sum(map(ord, str(name))) % 6
+
+
+FILTERS = {'invoices': {'open': 'Open', 'overdue': 'Overdue', 'paid': 'Paid'}}
 
 
 def _num(amount, currency, cls='num'):
@@ -56,7 +71,7 @@ def _pill(status):
     return _cell(label, 'pill pill-' + tone)
 
 
-def table(ledger, view):
+def table(ledger, view, status_filter=''):
     """Columns and rows for one record view, newest first, with names instead of IDs."""
     clients = {c['id']: c for c in ledger.list_records('clients')}
 
@@ -71,14 +86,20 @@ def table(ledger, view):
         return cols, rows, {}
     records = ledger.list_records(view)
     totals = defaultdict(int)
+    today = date.today().isoformat()
     if view == 'invoices':
         records.sort(key=lambda r: (r.get('issued_date') or '', r['id']), reverse=True)
+        if status_filter == 'open':
+            records = [r for r in records if r['status'] in ('unpaid', 'partial')]
+        elif status_filter in ('overdue', 'paid'):
+            records = [r for r in records if r['status'] == status_filter]
         cols = [('Invoice', ''), ('Client', ''), ('Issued', ''), ('Due', ''), ('Amount', 'num'),
                 ('Still owed', 'num'), ('Status', '')]
         rows = []
         for r in records:
             totals[r['currency']] += r['balance_minor']
-            rows.append([_cell(r.get('invoice_number') or f"#{r['id']}", 'strong'), _cell(name(r['client_id'])),
+            rows.append([_cell(r.get('invoice_number') or f"#{r['id']}", 'strong', new=r.get('issued_date') == today),
+                         _cell(name(r['client_id']), avatar=name(r['client_id'])),
                          _cell(reports.date_label(r.get('issued_date'))), _cell(reports.date_label(r.get('due_date'))),
                          _num(r['amount_minor'], r['currency']),
                          _num(r['balance_minor'], r['currency']) if r['balance_minor'] else _cell('—', 'num'),
@@ -93,7 +114,8 @@ def table(ledger, view):
         rows = []
         for r in records:
             totals[r['currency']] += r['amount_minor']
-            row = [_cell(reports.date_label(r.get(field))), _cell(name(r['client_id']), 'strong')]
+            row = [_cell(reports.date_label(r.get(field)), new=r.get(field) == today),
+                   _cell(name(r['client_id']), 'strong', avatar=name(r['client_id']))]
             if view == 'expenses':
                 row.append(_cell(r.get('category') or '—', 'tag'))
             row += [_cell(r.get('description') or '—', 'muted'), _num(r['amount_minor'], r['currency'])]
@@ -115,7 +137,7 @@ def table(ledger, view):
         for r in records:
             cur = currency.get(r['id'])
             role = r.get('role') or ('customer' if billed[r['id']] else 'vendor' if spent[r['id']] else '')
-            rows.append([_cell(r['name'], 'strong'), _cell(role.capitalize() or '—', 'tag'),
+            rows.append([_cell(r['name'], 'strong', avatar=r['name']), _cell(role.capitalize() or '—', 'tag'),
                          _num(billed[r['id']], cur) if billed[r['id']] else _cell('—', 'num muted'),
                          _num(owed[r['id']], cur) if owed[r['id']] else _cell('—', 'num muted'),
                          _num(spent[r['id']], cur) if spent[r['id']] else _cell('—', 'num muted')])
@@ -134,14 +156,17 @@ def table(ledger, view):
     return cols, rows, {}
 
 
-def render_page(ledger, view: str = '', *, demo: bool = False, embed: bool = False, env=None) -> str:
+def render_page(ledger, view: str = '', *, demo: bool = False, embed: bool = False, env=None,
+                status_filter: str = '') -> str:
     """Render one dashboard view. All ledger text is autoescaped by Jinja."""
     if view and view not in VIEWS:
         raise KeyError(view)
+    if status_filter and status_filter not in FILTERS.get(view, {}):
+        raise KeyError(status_filter)
     summary = ledger.summary()
     context = dict(summary=summary, demo=demo or summary.get('is_demo', False), views=VIEWS, nav=NAV,
                    embed=embed, view=view, title=VIEWS.get(view, 'Overview'),
-                   today=date.today().isoformat())
+                   today=date.today().isoformat(), filters=FILTERS.get(view, {}), status_filter=status_filter)
     if view in ('', 'reports'):
         data = reports.build(ledger)
         context['r'] = data
@@ -156,7 +181,7 @@ def render_page(ledger, view: str = '', *, demo: bool = False, embed: bool = Fal
             aging = [(k, v) for k, v in primary['aging'].items() if v]
             context['aging_svg'] = charts.bars(aging, cur, color=charts.PROFIT, uid='aging')
     else:
-        columns, rows, totals = table(ledger, view)
+        columns, rows, totals = table(ledger, view, status_filter)
         context.update(columns=columns, rows=rows, totals=totals)
     return (env or templates()).get_template('dashboard.html').render(**context).strip()
 

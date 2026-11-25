@@ -1,4 +1,5 @@
-{% macro link(key) %}{% if embed %}href="#{{ key or 'overview' }}" data-view="{{ key }}"{% else %}href="/{{ key }}"{% endif %}{% endmacro %}
+{% macro link(key, f='') %}{% if embed %}href="#{{ key or 'overview' }}" data-view="{{ key }}"{% if f %} data-filter="{{ f }}"{% endif %}{% else %}href="/{{ key }}{% if f %}?filter={{ f }}{% endif %}"{% endif %}{% endmacro %}
+{% macro avatar(who) %}<span class="avatar tone-{{ who|hue }}" aria-hidden="true">{{ who|initials }}</span>{% endmacro %}
 {% macro signed(amount, cur) %}{% if amount < 0 %}−{{ (0 - amount)|cash(cur) }}{% else %}{{ amount|cash(cur) }}{% endif %}{% endmacro %}
 {% macro growth(pct, noun) %}{% if pct is none %}{% elif pct >= 0 %}<span class="up">Up {{ pct }}%</span> {{ noun }}{% else %}<span class="down">Down {{ 0 - pct }}%</span> {{ noun }}{% endif %}{% endmacro %}
 {% if not embed %}<!doctype html>
@@ -18,12 +19,21 @@
 <header class="topbar"><h1>{{ title }}</h1>{% if demo %}<span class="badge badge-demo" title="Fictional sample books">Demo data</span>{% else %}<span class="badge">Your books</span>{% endif %}</header>
 <main id="main">
 {% if view in ('', 'reports') and not r.has_data %}
-<section class="empty-state"><h2>Nothing booked yet</h2><p>When your agent finds invoices, payments and receipts in your email, they appear here with charts and reports. Ask it to run a scan, or switch to the demo to see a full year of example books.</p></section>
+<section class="welcome">
+  <h2>Your books are ready</h2>
+  <p>Connect your email and Hermes fills this page with invoices, payments and receipts, then charts and reports.</p>
+  <ol class="steps">
+    <li><strong>Create a free Composio account</strong><span>At composio.dev. Skip this if you already have a workspace.</span></li>
+    <li><strong>Sign Hermes in to Composio</strong><span>Dashboard, MCP servers, composio, Authorize.</span></li>
+    <li><strong>Connect Gmail</strong><span>Tell Hermes "Connect my Gmail" in a new chat and open the link it gives you.</span></li>
+  </ol>
+  <p class="try">Or try it now: ask Hermes <q>Create an invoice for Acme for $2,000</q> and watch it appear here.</p>
+</section>
 {% elif view == '' %}
 {% set p = r.primary %}
 <section class="hero">
   <p class="lede">You kept <strong>{{ signed(p.net, p.currency) }}</strong> of the <strong>{{ p.revenue|cash(p.currency) }}</strong> you invoiced in the last 12 months.</p>
-  <p class="sub">{{ growth(p.growth, 'in revenue over the last three months') }}{% if p.margin is not none %}{% if p.growth is not none %}, with{% else %}A{% endif %} a {{ p.margin }}% profit margin{% endif %}.</p>
+  <p class="sub">{% if p.growth is not none %}{{ growth(p.growth, 'in revenue over the last three months') }}{% if p.margin is not none %}, with a {{ p.margin }}% profit margin{% endif %}.{% elif p.margin is not none %}That is a {{ p.margin }}% profit margin so far.{% endif %}</p>
 </section>
 <section class="panel chart-panel" aria-label="Revenue, expenses and profit by month">
   <div class="legend"><span class="key key-rev">Revenue</span><span class="key key-exp">Expenses</span><span class="key key-net">Profit</span></div>
@@ -37,13 +47,13 @@
 </section>
 <div class="columns">
   <section class="panel"><h2>Who owes you</h2>
-  {% if p.open_invoices %}<ul class="owed">{% for inv in p.open_invoices[:6] %}<li><div><strong>{{ inv.client }}</strong><small>{{ inv.invoice_number or ("#" ~ inv.id) }}, due {{ inv.due_date|day }}</small></div><div class="right"><strong>{{ inv.balance_minor|cash(inv.currency) }}</strong>{% if inv.days_late %}<span class="pill pill-bad">{{ inv.days_late }} days late</span>{% else %}<span class="pill pill-open">Not due</span>{% endif %}</div></li>{% endfor %}</ul>
+  {% if p.open_invoices %}<ul class="owed">{% for inv in p.open_invoices[:6] %}<li>{{ avatar(inv.client) }}<div class="grow"><strong>{{ inv.client }}</strong><small>{{ inv.invoice_number or ("#" ~ inv.id) }}, due {{ inv.due_date|day }}</small></div><div class="right"><strong>{{ inv.balance_minor|cash(inv.currency) }}</strong>{% if inv.days_late %}<span class="pill pill-bad">{{ inv.days_late }} days late</span>{% else %}<span class="pill pill-open">Not due</span>{% endif %}</div></li>{% endfor %}</ul>
   <a class="more" {{ link('invoices') }}>All invoices</a>{% else %}<p class="muted">Every invoice is paid.</p>{% endif %}
   </section>
   <section class="panel"><h2>Where the money went</h2>{{ category_svg }}</section>
 </div>
 <section class="panel"><h2>Latest activity</h2>
-<ul class="activity">{% for a in r.activity %}<li class="act-{{ a.tone }}"><span class="dot" aria-hidden="true"></span><div><strong>{{ a.who }}</strong><small>{{ a.kind }}: {{ a.what }}</small></div><time>{{ a.date|day }}</time><span class="amt">{{ a.sign }}{{ a.amount|cash(a.currency) }}</span></li>{% endfor %}</ul>
+<ul class="activity">{% for a in r.activity %}<li class="act-{{ a.tone }}">{{ avatar(a.who) }}<div><strong>{{ a.who }}</strong>{% if a.date == today %} <span class="pill pill-new">New</span>{% endif %}<small><span class="kind">{{ a.kind }}</span> {{ a.what }}</small></div><time>{{ a.date|day }}</time><span class="amt">{{ a.sign }}{{ a.amount|cash(a.currency) }}</span></li>{% endfor %}</ul>
 </section>
 {% for o in r.others %}
 <section class="panel other"><h2>{{ o.currency }} is tracked separately</h2><p class="muted">Amounts in different currencies are never added together or converted.</p>
@@ -78,10 +88,11 @@
 {% endfor %}
 {% else %}
 <section class="panel">
-  <div class="panel-heading"><h2>{{ rows|length }} {{ title|lower if view != 'audit' else 'changes' }}</h2>{% for label, sums in totals.items() %}<p class="totals">{{ label }}: {% for cur, amount in sums.items() %}<strong>{{ amount|cash(cur) }}</strong>{% if not loop.last %} and {% endif %}{% endfor %}</p>{% endfor %}</div>
+  {% if filters %}<div class="chips" role="group" aria-label="Filter {{ title|lower }}"><a {{ link(view) }}{% if not status_filter %} aria-current="true"{% endif %}>All</a>{% for key, label in filters.items() %}<a {{ link(view, key) }}{% if status_filter == key %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}</div>{% endif %}
+  <div class="panel-heading"><h2>{{ rows|length }} {{ (filters[status_filter]|lower ~ ' ') if status_filter }}{{ title|lower if view != 'audit' else 'changes' }}</h2>{% for label, sums in totals.items() %}<p class="totals">{{ label }}: {% for cur, amount in sums.items() %}<strong>{{ amount|cash(cur) }}</strong>{% if not loop.last %} and {% endif %}{% endfor %}</p>{% endfor %}</div>
   {% if rows %}<div class="table-scroll" tabindex="0" role="region" aria-label="{{ title }}"><table><caption>{{ title }}</caption>
   <thead><tr>{% for label, cls in columns %}<th scope="col" class="{{ cls }}">{{ label }}</th>{% endfor %}</tr></thead>
-  <tbody>{% for row in rows %}<tr>{% for c in row %}<td class="{{ c.cls }}">{% if 'pill' in c.cls or c.cls == 'tag' %}<span class="{{ c.cls }}">{{ c.text }}</span>{% else %}{{ c.text }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+  <tbody>{% for row in rows %}<tr>{% for c in row %}<td class="{{ c.cls }}">{% if c.avatar %}<span class="who">{{ avatar(c.avatar) }}{{ c.text }}</span>{% elif 'pill' in c.cls or c.cls == 'tag' %}<span class="{{ c.cls }}">{{ c.text }}</span>{% else %}{{ c.text }}{% endif %}{% if c.new %} <span class="pill pill-new">New</span>{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody>
   </table></div>{% else %}<div class="empty-state small"><h2>No {{ title|lower }} yet</h2><p>Your agent adds them here as it finds them in your email.</p></div>{% endif %}
 </section>
 {% endif %}

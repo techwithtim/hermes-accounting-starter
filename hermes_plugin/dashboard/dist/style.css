@@ -1,0 +1,14 @@
+/* Controls above the ledger in the Hermes Accounting tab. Prefixed to avoid clashes. */
+.acct-root{display:flex;flex-direction:column;gap:12px}
+.acct-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.acct-segs{display:inline-flex;padding:3px;border-radius:999px;background:#123B2E;border:1px solid #1A4A3A}
+.acct-seg{appearance:none;border:0;background:transparent;color:#BFD3C8;font:600 13px/1 system-ui,-apple-system,"Segoe UI",sans-serif;padding:8px 16px;border-radius:999px;cursor:pointer}
+.acct-seg:hover{color:#fff}
+.acct-seg-on{background:#F3F7F4;color:#123B2E}
+.acct-seg:focus-visible{outline:2px solid #B88A2B;outline-offset:2px}
+.acct-live{display:inline-flex;align-items:center;gap:8px;font:13px system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--color-muted-foreground,#9AB0A6)}
+.acct-pulse{width:8px;height:8px;border-radius:50%;background:#3CC68A;box-shadow:0 0 0 0 rgba(60,198,138,.6);animation:acct-pulse 2s infinite}
+.acct-live-off .acct-pulse{background:#B5473A;animation:none}
+.acct-error{margin:0;font:13px system-ui,sans-serif;color:#E08A7E}
+@keyframes acct-pulse{0%{box-shadow:0 0 0 0 rgba(60,198,138,.55)}70%{box-shadow:0 0 0 8px rgba(60,198,138,0)}100%{box-shadow:0 0 0 0 rgba(60,198,138,0)}}
+@media (prefers-reduced-motion:reduce){.acct-pulse{animation:none}}
