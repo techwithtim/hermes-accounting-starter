@@ -60,7 +60,7 @@ def main():
     if not args.skip_hermes:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(skill_text)
-    print('Installed. Follow docs/COMPOSIO.md to connect your own Gmail account.')
+    print('Installed. Continue with SETUP.md step 3 (dashboards), then connect Gmail in step 4.')
     print('Start dashboard: '+shlex.join([str(exe), '--data-dir', str(data), 'serve']))
     print('Reload MCP in a new Hermes session. Scheduled scans are opt-in; see docs/AUTOMATION.md.')
 
