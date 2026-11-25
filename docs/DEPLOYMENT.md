@@ -5,7 +5,17 @@ configured Hermes agent. Composio handles the Gmail OAuth connection.
 Hostinger-specific images may differ; this package does not assume a
 particular port proxy or bypass their authentication.
 
-## Run locally
+## On a Hermes server (default)
+
+`python3 scripts/install.py` adds an **Accounting** tab to the Hermes
+dashboard. Open the dashboard at its usual address, sign in as usual and
+click **Accounting**; **Demo data** switches to the fictional example.
+Nothing else needs to run: each page is rendered on request. If the tab is
+missing in a dashboard that was already running, open
+`<dashboard address>/api/dashboard/plugins/rescan` once while signed in,
+then refresh.
+
+## Run locally (standalone, no Hermes)
 
 ```sh
 uv run accounting-starter --demo demo

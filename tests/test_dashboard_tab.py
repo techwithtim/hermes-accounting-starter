@@ -1,0 +1,83 @@
+"""The Hermes dashboard tab: embed rendering, the plugin route and the installer copy."""
+import asyncio
+import importlib.util
+import json
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def load(path, name):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_embed_render_has_only_in_page_links_and_scoped_css(tmp_path, capsys):
+    from accounting_starter.cli import main
+    assert main(['--data-dir', str(tmp_path), '--demo', 'demo']) == 0
+    capsys.readouterr()
+    assert main(['--data-dir', str(tmp_path), '--demo', 'render', '--embed', 'invoices']) == 0
+    page = json.loads(capsys.readouterr().out)
+    assert page['html'].startswith('<div class="ls-app">') and '<html' not in page['html']
+    assert 'href="/' not in page['html'] and 'data-view="reviews"' in page['html']
+    assert 'DEMO' in page['html'] and 'ssh -N' not in page['html']
+    assert ':host{' in page['css'] and ':root{' not in page['css'] and 'body{' not in page['css']
+
+
+def test_render_escapes_ledger_text(tmp_path, capsys):
+    from accounting_starter.cli import main
+    from accounting_starter.ledger import Ledger
+    ledger = Ledger(tmp_path/'ledger.sqlite3').initialize()
+    ledger.create_client('<img src=x onerror=alert(1)>', source_id='test:xss')
+    assert main(['--data-dir', str(tmp_path), 'render', '--embed', 'clients']) == 0
+    html = json.loads(capsys.readouterr().out)['html']
+    assert '<img' not in html and '&lt;img' in html
+
+
+def test_render_rejects_unknown_view(tmp_path):
+    from accounting_starter.cli import main
+    with pytest.raises(SystemExit):
+        main(['--data-dir', str(tmp_path), 'render', '--embed', '../etc'])
+
+
+def test_plugin_route_validates_view_and_uses_clean_environment(tmp_path, monkeypatch):
+    api = load(ROOT/'hermes_plugin/dashboard/plugin_api.py', 'accounting_plugin_api')
+    (tmp_path/'settings.json').write_text(json.dumps({'executable': '/app/bin/accounting-starter', 'data_dir': '/data'}))
+    monkeypatch.setattr(api, 'HERE', tmp_path)
+    monkeypatch.setenv('PYTHONPATH', '/hermes/site-packages')
+    seen = {}
+
+    class Done:
+        returncode = 0
+        async def communicate(self):
+            return json.dumps({'html': '<div></div>', 'css': ''}).encode(), b''
+
+    async def fake_exec(*command, **kwargs):
+        seen['command'], seen['env'] = command, kwargs['env']
+        return Done()
+
+    monkeypatch.setattr(api.asyncio, 'create_subprocess_exec', fake_exec)
+    assert asyncio.run(api.page(view='invoices', demo=True)) == {'html': '<div></div>', 'css': ''}
+    assert seen['command'] == ('/app/bin/accounting-starter', '--data-dir', '/data', '--demo',
+                               'render', '--embed', 'invoices')
+    assert 'PYTHONPATH' not in seen['env']
+    with pytest.raises(api.HTTPException):
+        asyncio.run(api.page(view='; rm -rf /'))
+
+
+def test_installer_copies_plugin_and_refuses_foreign_directory(tmp_path):
+    installer = load(ROOT/'scripts/install.py', 'installer_tab')
+    home = tmp_path/'hermes'
+    installer.install_dashboard_tab(home, Path('/app/exe'), Path('/data'))
+    plugin = home/'plugins/accounting-starter'
+    assert (plugin/'plugin.yaml').exists() and (plugin/'dashboard/dist/index.js').exists()
+    assert json.loads((plugin/'dashboard/settings.json').read_text()) == {'executable': '/app/exe', 'data_dir': '/data'}
+    installer.install_dashboard_tab(home, Path('/app/exe'), Path('/data'))  # rerun is fine
+    other = tmp_path/'other'
+    (other/'plugins/accounting-starter').mkdir(parents=True)
+    with pytest.raises(SystemExit):
+        installer.install_dashboard_tab(other, Path('/app/exe'), Path('/data'))

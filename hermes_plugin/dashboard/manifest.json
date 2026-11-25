@@ -1,0 +1,13 @@
+{
+  "name": "accounting-starter",
+  "label": "Accounting",
+  "description": "Read-only view of the Accounting Starter ledger",
+  "icon": "BarChart3",
+  "version": "0.2.0",
+  "tab": {
+    "path": "/accounting",
+    "position": "end"
+  },
+  "entry": "dist/index.js",
+  "api": "plugin_api.py"
+}

@@ -1,31 +1,19 @@
 """Read-only dashboard; the CLI always serves this on loopback."""
 from pathlib import Path
-from decimal import Decimal
-from babel.numbers import get_currency_precision
-
-def format_money(amount_minor, currency):
-    precision = get_currency_precision(currency)
-    value = Decimal(amount_minor).scaleb(-precision)
-    return f"{currency} {value:,.{precision}f}"
-
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .ledger import Ledger
-
-VIEWS = {'invoices': 'Invoices', 'expenses': 'Expenses', 'payments': 'Payments',
-         'clients': 'Clients', 'reviews': 'Review queue', 'documents': 'Documents', 'audit': 'Audit trail'}
+from .render import ROOT, VIEWS, embed_css, format_money, render_page, templates as _templates  # noqa: F401
 
 
 def create_app(path: str | Path, *, demo: bool = False) -> FastAPI:
     ledger = Ledger(Path(path))
     ledger.initialize()
-    root = Path(__file__).parent
-    templates = Environment(loader=FileSystemLoader(root / 'templates'), autoescape=select_autoescape(['html']))
-    templates.filters['money'] = format_money
+    root = ROOT
+    templates = _templates()
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.mount('/static', StaticFiles(directory=root / 'static'), name='static')
 
@@ -52,11 +40,6 @@ def create_app(path: str | Path, *, demo: bool = False) -> FastAPI:
     def dashboard(request: Request, view: str = ''):
         if view and view not in VIEWS:
             raise HTTPException(404)
-        rows = ledger.list_records(view) if view else []
-        columns = list(dict.fromkeys(key for row in rows for key in row))
-        summary = ledger.summary()
-        return templates.get_template('dashboard.html').render(
-            summary=summary, demo=demo or summary.get('is_demo', False), views=VIEWS,
-            view=view, title=VIEWS.get(view, 'Financial overview'), rows=rows, columns=columns)
+        return render_page(ledger, view, demo=demo, env=templates)
 
     return app

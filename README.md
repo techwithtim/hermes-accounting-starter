@@ -36,8 +36,9 @@ Paste this into a **working Hermes agent**:
 Set up the bookkeeping system from https://github.com/techwithtim/hermes-accounting-starter for me. Clone it into ~/apps/hermes-accounting-starter, then open SETUP.md in that folder and follow it step by step. Stop and ask me whenever it says a step is mine, and never ask me to paste a password or key into this chat.
 ```
 
-Hermes follows [SETUP.md](SETUP.md): it installs the package, starts the
-dashboards, then walks you through the three things only you can do:
+Hermes follows [SETUP.md](SETUP.md): one install command adds the ledger,
+the tools and an **Accounting** tab to your Hermes dashboard (same address
+and login). Then it walks you through the three things only you can do:
 1. Sign in to Composio: click **Authorize** on the `composio` MCP server in
    the Hermes dashboard (or run `hermes mcp login composio` over SSH). No API
    key.
@@ -85,7 +86,9 @@ Open http://127.0.0.1:8765. For your live ledger, omit `--demo`.
 The global `--data-dir` and `--demo` options must precede the command.
 Demo and live use separate files; seeding demo never populates live books.
 
-For a remote server, use an SSH tunnel, not a public unauthenticated URL.
+On a Hermes server, use the **Accounting** tab in the Hermes dashboard
+instead (same address and login). For the standalone server on a remote
+machine, use an SSH tunnel, not a public unauthenticated URL.
 See [deployment and service instructions](docs/DEPLOYMENT.md).
 
 ## Connect and automate

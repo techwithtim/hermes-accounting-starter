@@ -16,3 +16,5 @@ credentials*.yml
 *.pem
 *.key
 runtime/
+.setup-tools/
+!hermes_plugin/dashboard/dist/

@@ -12,10 +12,20 @@ to you. This starter does not provide encryption at rest. File permissions
 are not a substitute for full-disk encryption on a shared host.
 
 ## Network access
-The dashboard listens on 127.0.0.1, not a public interface. It is read-only,
-with no third-party assets. On a VPS use an SSH tunnel, for example:
-`ssh -L 8765:127.0.0.1:8765 user@your-server` then open
-`http://127.0.0.1:8765`. Do not port-forward it to the Internet. There is no
+On a Hermes server the ledger is shown in the **Accounting** tab of the
+Hermes dashboard. The tab and its API route (`/api/plugins/accounting-starter/`)
+sit behind the dashboard's own login, so it is reachable exactly where the
+Hermes dashboard is and with the same username and password (Hermes refuses
+a public bind without an auth provider). The route runs the package's
+read-only `render` command with fixed arguments and a view name checked
+against a fixed list, in a clean environment. Pages are autoescaped by Jinja
+and shown in a shadow root after the tab strips scripts, event handlers and
+external links. Serve the Hermes dashboard over HTTPS if your host offers it:
+over plain HTTP the login and the pages travel unencrypted.
+
+The standalone `serve` dashboard listens on 127.0.0.1 only and has no login.
+On a VPS use the Hermes tab instead, or an SSH tunnel. Do not port-forward
+it to the Internet. There is no
 multi-user login, tenant isolation, or hosted SaaS security boundary here.
 
 ## Email and AI
