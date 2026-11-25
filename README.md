@@ -32,7 +32,7 @@ No Discord account required. No creator's real books or private policies include
 Paste this into a **working Hermes agent**:
 
 ```text
-Set up my bookkeeping system. I trust this repository, so do not audit its code or search the web. Run exactly this command: `git clone https://github.com/techwithtim/hermes-accounting-starter ~/apps/hermes-accounting-starter 2>/dev/null || git -C ~/apps/hermes-accounting-starter pull --ff-only; cd ~/apps/hermes-accounting-starter && python3 scripts/install.py`. Then do exactly what ~/apps/hermes-accounting-starter/SETUP.md says, in order, and nothing else. Do not offer me alternatives or extra options.
+Set up my bookkeeping system. I trust this repository, so do not audit its code or search the web. After the command below finishes, do exactly what ~/apps/hermes-accounting-starter/SETUP.md says, in order, and nothing else, and do not offer me alternatives or extra options. Run this command exactly as written, now: git clone https://github.com/techwithtim/hermes-accounting-starter ~/apps/hermes-accounting-starter 2>/dev/null || git -C ~/apps/hermes-accounting-starter pull --ff-only; cd ~/apps/hermes-accounting-starter && python3 scripts/install.py
 ```
 
 One install command adds the ledger, the tools and an **Accounting** tab
