@@ -1,18 +1,92 @@
-{% macro link(key) %}{% if embed %}href="#{{ key or 'overview' }}" data-view="{{ key }}"{% else %}href="/{{ key }}"{% endif %}{% endmacro %}{% if not embed %}<!doctype html>
+{% macro link(key) %}{% if embed %}href="#{{ key or 'overview' }}" data-view="{{ key }}"{% else %}href="/{{ key }}"{% endif %}{% endmacro %}
+{% macro signed(amount, cur) %}{% if amount < 0 %}−{{ (0 - amount)|cash(cur) }}{% else %}{{ amount|cash(cur) }}{% endif %}{% endmacro %}
+{% macro growth(pct, noun) %}{% if pct is none %}{% elif pct >= 0 %}<span class="up">Up {{ pct }}%</span> {{ noun }}{% else %}<span class="down">Down {{ 0 - pct }}%</span> {{ noun }}{% endif %}{% endmacro %}
+{% if not embed %}<!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ title }} · Ledger Starter</title><link rel="stylesheet" href="/static/style.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ title }} · Ledger</title><link rel="stylesheet" href="/static/style.css"></head>
 <body><a class="skip" href="#main">Skip to content</a>
-{% else %}<div class="ls-app">{% endif %}
-<aside class="sidebar"><a class="brand" {{ link('') }}><span class="brand-icon" aria-hidden="true">L</span> Ledger Starter</a><p class="eyebrow">Your business, in balance</p>
-<nav aria-label="Main navigation"><a {{ link('') }} {% if not view %}aria-current="page"{% endif %}>Overview</a>{% for key, label in views.items() %}<a {{ link(key) }} {% if key == view %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
-<div class="local"><span class="dot"></span> {{ 'Private workspace' if embed else 'Local workspace' }}<p>Private by default.<br>Always in your control.</p></div></aside>
-<div class="workspace"><header class="topbar"><span class="eyebrow">WORKSPACE / {{ title }}</span><span class="badge {{ 'demo' if demo else '' }}">{{ 'DEMO · Fictional sample data' if demo else 'LIVE LEDGER' }}</span></header>
-<main id="main"><div class="page-heading"><div><p class="eyebrow">A CLEARER PICTURE</p><h1>{{ title }}</h1><p class="muted">{{ 'Inspect records and their source evidence.' if view else 'A simple, honest view of your financial activity.' }}</p></div><span class="readonly">Read-only dashboard</span></div>
-{% if not view %}
-<section class="stats" aria-label="Record counts">{% for key in ['invoices', 'expenses', 'payments', 'clients'] %}<a class="stat" {{ link(key) }}><span>{{ views[key] }}</span><strong>{{ summary.counts.get(key, 0) }}</strong><small>View records <span aria-hidden="true">↗</span></small></a>{% endfor %}</section>
-<section class="panel"><div class="panel-heading"><h2>Activity by currency</h2><span class="muted">No exchange-rate assumptions</span></div><div class="currencies">{% for currency, totals in summary.by_currency.items() %}<section class="currency"><h3>{{ currency }}</h3><dl>{% for label, value in totals.items() %}<div><dt>{{ label|replace('_minor', '')|replace('_', ' ')|capitalize }}</dt><dd>{{ value|money(currency) }}</dd></div>{% endfor %}</dl></section>{% else %}<div class="empty"><span aria-hidden="true">◌</span><h3>No currency activity yet</h3><p>Records added through your agent will appear here.</p></div>{% endfor %}</div><p class="panel-note">Amounts are displayed in original currency using its minor-unit precision; currencies are never combined.</p></section>
-<section class="review-callout"><div><h2>Keep the details accounted for</h2><p>{{ summary.pending_reviews }} items awaiting review. Ambiguous records stay visible, not assumed.</p></div><a class="button" {{ link('reviews') }}>Open review queue →</a></section>
-{% else %}<section class="panel"><div class="panel-heading"><h2>{{ title }}</h2><span class="muted">{{ rows|length }} records</span></div>{% if rows %}<div class="table-scroll" tabindex="0" role="region" aria-label="{{ title }} records"><table><caption>{{ title }} · source ledger records</caption><thead><tr>{% for column in columns %}<th scope="col">{{ column|replace('_minor', '')|replace('_', ' ')|capitalize }}</th>{% endfor %}</tr></thead><tbody>{% for row in rows %}<tr>{% for column in columns %}<td>{% if column.endswith('_minor') and row.get('currency') and row.get(column) is number %}{{ row.get(column)|money(row.currency) }}{% else %}{{ row.get(column, '—') }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty"><span aria-hidden="true">◌</span><h3>No records yet</h3><p>This view is ready when you are. Add records through the agent's MCP tools.</p></div>{% endif %}</section>{% endif %}
-{% if embed %}<footer><strong>Built for private bookkeeping.</strong> Review figures before using them for tax or financial reporting. This tab is protected by your Hermes dashboard login.</footer>
-</main></div></div>{% else %}<footer><strong>Built for local-first bookkeeping.</strong> Review figures before using them for tax or financial reporting.<details><summary>Safe remote access</summary><p>Keep the server on 127.0.0.1. From your own computer, use an SSH tunnel:</p><code>ssh -N -L 8765:127.0.0.1:8765 user@your-server</code><p>Then open http://127.0.0.1:8765 locally. Do not expose this unauthenticated dashboard to the public internet. On a Hermes server, use the Accounting tab in the Hermes dashboard instead.</p></details></footer>
-</main></div></body></html>{% endif %}
+{% endif %}
+<div class="ls-app">
+<aside class="sidebar">
+  <a class="brand" {{ link('') }}><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 18h16M6 15l4-5 3 3 5-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Ledger</a>
+  <nav aria-label="Main navigation">
+  {% for group in nav %}<div class="nav-group">{% for key, label in group %}<a {{ link(key) }}{% if key == view %} aria-current="page"{% endif %}>{{ label }}{% if key == 'reviews' and summary.pending_reviews %}<span class="count">{{ summary.pending_reviews }}</span>{% endif %}</a>{% endfor %}</div>{% endfor %}
+  </nav>
+  <p class="sidebar-note">Read-only. Your agent adds records; you see them here.</p>
+</aside>
+<div class="workspace">
+<header class="topbar"><h1>{{ title }}</h1>{% if demo %}<span class="badge badge-demo" title="Fictional sample books">Demo data</span>{% else %}<span class="badge">Your books</span>{% endif %}</header>
+<main id="main">
+{% if view in ('', 'reports') and not r.has_data %}
+<section class="empty-state"><h2>Nothing booked yet</h2><p>When your agent finds invoices, payments and receipts in your email, they appear here with charts and reports. Ask it to run a scan, or switch to the demo to see a full year of example books.</p></section>
+{% elif view == '' %}
+{% set p = r.primary %}
+<section class="hero">
+  <p class="lede">You kept <strong>{{ signed(p.net, p.currency) }}</strong> of the <strong>{{ p.revenue|cash(p.currency) }}</strong> you invoiced in the last 12 months.</p>
+  <p class="sub">{{ growth(p.growth, 'in revenue over the last three months') }}{% if p.margin is not none %}{% if p.growth is not none %}, with{% else %}A{% endif %} a {{ p.margin }}% profit margin{% endif %}.</p>
+</section>
+<section class="panel chart-panel" aria-label="Revenue, expenses and profit by month">
+  <div class="legend"><span class="key key-rev">Revenue</span><span class="key key-exp">Expenses</span><span class="key key-net">Profit</span></div>
+  {{ trend_svg }}
+</section>
+<section class="figures" aria-label="Key figures">
+  <div><span>Waiting to be paid</span><strong>{{ p.outstanding|cash(p.currency) }}</strong><small>{{ p.open_invoices|length }} open invoice{{ '' if p.open_invoices|length == 1 else 's' }}</small></div>
+  <div class="{{ 'alert' if p.overdue }}"><span>Overdue</span><strong>{{ p.overdue|cash(p.currency) }}</strong><small>{{ p.overdue_count }} past due date</small></div>
+  <div><span>Average monthly profit</span><strong>{{ signed(p.avg_profit, p.currency) }}</strong><small>{% if p.best_month %}Best: {{ p.best_month.month|monthname }}{% endif %}</small></div>
+  <div><span>Collected</span><strong>{{ p.collected|cash(p.currency) }}</strong><small>Paid into your account</small></div>
+</section>
+<div class="columns">
+  <section class="panel"><h2>Who owes you</h2>
+  {% if p.open_invoices %}<ul class="owed">{% for inv in p.open_invoices[:6] %}<li><div><strong>{{ inv.client }}</strong><small>{{ inv.invoice_number or ("#" ~ inv.id) }}, due {{ inv.due_date|day }}</small></div><div class="right"><strong>{{ inv.balance_minor|cash(inv.currency) }}</strong>{% if inv.days_late %}<span class="pill pill-bad">{{ inv.days_late }} days late</span>{% else %}<span class="pill pill-open">Not due</span>{% endif %}</div></li>{% endfor %}</ul>
+  <a class="more" {{ link('invoices') }}>All invoices</a>{% else %}<p class="muted">Every invoice is paid.</p>{% endif %}
+  </section>
+  <section class="panel"><h2>Where the money went</h2>{{ category_svg }}</section>
+</div>
+<section class="panel"><h2>Latest activity</h2>
+<ul class="activity">{% for a in r.activity %}<li class="act-{{ a.tone }}"><span class="dot" aria-hidden="true"></span><div><strong>{{ a.who }}</strong><small>{{ a.kind }}: {{ a.what }}</small></div><time>{{ a.date|day }}</time><span class="amt">{{ a.sign }}{{ a.amount|cash(a.currency) }}</span></li>{% endfor %}</ul>
+</section>
+{% for o in r.others %}
+<section class="panel other"><h2>{{ o.currency }} is tracked separately</h2><p class="muted">Amounts in different currencies are never added together or converted.</p>
+<div class="figures compact"><div><span>Invoiced</span><strong>{{ o.revenue|cash(o.currency) }}</strong></div><div><span>Expenses</span><strong>{{ o.expenses|cash(o.currency) }}</strong></div><div><span>Kept</span><strong>{{ signed(o.net, o.currency) }}</strong></div><div><span>Waiting to be paid</span><strong>{{ o.outstanding|cash(o.currency) }}</strong></div></div></section>
+{% endfor %}
+{% if summary.pending_reviews %}<section class="callout"><p><strong>{{ summary.pending_reviews }} item{{ '' if summary.pending_reviews == 1 else 's' }} need{{ 's' if summary.pending_reviews == 1 }} your decision.</strong> Your agent was not sure how to book them, so nothing was guessed.</p><a class="button" {{ link('reviews') }}>Open review queue</a></section>{% endif %}
+{% elif view == 'reports' %}
+{% set p = r.primary %}
+<section class="hero">
+  <p class="lede">{{ signed(p.net, p.currency) }} profit on {{ p.revenue|cash(p.currency) }} of revenue.</p>
+  <p class="sub">Last 12 months in {{ p.currency }}. {{ growth(p.profit_growth, 'profit in the last six months compared with the six before') }}{% if p.profit_growth is not none %}.{% endif %}</p>
+</section>
+<section class="panel"><h2>Profit kept over the year</h2>{{ cum_svg }}</section>
+<section class="panel"><h2>Month by month</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Monthly profit and loss"><table class="pnl"><caption>Profit and loss by month, {{ p.currency }}</caption>
+<thead><tr><th scope="col">Month</th><th scope="col" class="num">Revenue</th><th scope="col" class="num">Expenses</th><th scope="col" class="num">Profit</th><th scope="col" class="num">Margin</th><th scope="col" class="num">Collected</th></tr></thead>
+<tbody>{% for row in p.rows %}<tr><th scope="row">{{ row.month|monthname }}</th><td class="num">{{ row.revenue|cash(p.currency) }}</td><td class="num">{{ row.expenses|cash(p.currency) }}</td><td class="num {{ 'neg' if row.net < 0 else 'pos' }}">{{ signed(row.net, p.currency) }}</td><td class="num muted">{{ (row.margin ~ '%') if row.margin is not none else '—' }}</td><td class="num">{{ row.collected|cash(p.currency) }}</td></tr>{% endfor %}</tbody>
+<tfoot><tr><th scope="row">12 months</th><td class="num">{{ p.revenue|cash(p.currency) }}</td><td class="num">{{ p.expenses|cash(p.currency) }}</td><td class="num pos">{{ signed(p.net, p.currency) }}</td><td class="num">{{ (p.margin ~ '%') if p.margin is not none else '—' }}</td><td class="num">{{ p.collected|cash(p.currency) }}</td></tr></tfoot>
+</table></div></section>
+<div class="columns">
+  <section class="panel"><h2>Top clients</h2>{{ clients_svg }}</section>
+  <section class="panel"><h2>Expenses by category</h2>{{ category_svg }}</section>
+</div>
+<section class="panel"><h2>Unpaid invoices by age</h2>{% if aging_svg %}{{ aging_svg }}{% else %}<p class="muted">Nothing is waiting to be paid.</p>{% endif %}</section>
+{% for o in r.others %}
+<section class="panel"><h2>{{ o.currency }} month by month</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="{{ o.currency }} profit and loss"><table class="pnl"><caption>Profit and loss by month, {{ o.currency }}</caption>
+<thead><tr><th scope="col">Month</th><th scope="col" class="num">Revenue</th><th scope="col" class="num">Expenses</th><th scope="col" class="num">Profit</th></tr></thead>
+<tbody>{% for row in o.rows if row.revenue or row.expenses %}<tr><th scope="row">{{ row.month|monthname }}</th><td class="num">{{ row.revenue|cash(o.currency) }}</td><td class="num">{{ row.expenses|cash(o.currency) }}</td><td class="num {{ 'neg' if row.net < 0 else 'pos' }}">{{ signed(row.net, o.currency) }}</td></tr>{% endfor %}</tbody>
+<tfoot><tr><th scope="row">12 months</th><td class="num">{{ o.revenue|cash(o.currency) }}</td><td class="num">{{ o.expenses|cash(o.currency) }}</td><td class="num pos">{{ signed(o.net, o.currency) }}</td></tr></tfoot>
+</table></div></section>
+{% endfor %}
+{% else %}
+<section class="panel">
+  <div class="panel-heading"><h2>{{ rows|length }} {{ title|lower if view != 'audit' else 'changes' }}</h2>{% for label, sums in totals.items() %}<p class="totals">{{ label }}: {% for cur, amount in sums.items() %}<strong>{{ amount|cash(cur) }}</strong>{% if not loop.last %} and {% endif %}{% endfor %}</p>{% endfor %}</div>
+  {% if rows %}<div class="table-scroll" tabindex="0" role="region" aria-label="{{ title }}"><table><caption>{{ title }}</caption>
+  <thead><tr>{% for label, cls in columns %}<th scope="col" class="{{ cls }}">{{ label }}</th>{% endfor %}</tr></thead>
+  <tbody>{% for row in rows %}<tr>{% for c in row %}<td class="{{ c.cls }}">{% if 'pill' in c.cls or c.cls == 'tag' %}<span class="{{ c.cls }}">{{ c.text }}</span>{% else %}{{ c.text }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+  </table></div>{% else %}<div class="empty-state small"><h2>No {{ title|lower }} yet</h2><p>Your agent adds them here as it finds them in your email.</p></div>{% endif %}
+</section>
+{% endif %}
+<footer>{% if embed %}Protected by your Hermes dashboard login. {% endif %}Figures come from your agent's bookkeeping, not an audit. Check them before tax or financial reporting.{% if not embed %}<details><summary>Safe remote access</summary><p>This standalone page has no login and listens on 127.0.0.1 only. From your own computer use an SSH tunnel:</p><code>ssh -N -L 8765:127.0.0.1:8765 user@your-server</code><p>On a Hermes server, use the Accounting tab in the Hermes dashboard instead.</p></details>{% endif %}</footer>
+</main>
+</div>
+</div>
+{% if not embed %}</body></html>{% endif %}

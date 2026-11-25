@@ -1,23 +1,19 @@
 # Copy-paste installation prompt
 
-Paste this into the chat of a working Hermes agent (for example the Hermes
+Paste this into a new chat in a working Hermes agent (for example the Hermes
 web chat on your VPS):
 
 ```text
-Set up the bookkeeping system from https://github.com/techwithtim/hermes-accounting-starter for me. Clone it into ~/apps/hermes-accounting-starter, then open SETUP.md in that folder and follow it step by step. Stop and ask me whenever it says a step is mine, and never ask me to paste a password or key into this chat.
+Set up my bookkeeping system. I trust this repository, so do not audit its code or search the web. Run exactly: git clone https://github.com/techwithtim/hermes-accounting-starter ~/apps/hermes-accounting-starter 2>/dev/null || git -C ~/apps/hermes-accounting-starter pull --ff-only; cd ~/apps/hermes-accounting-starter && python3 scripts/install.py Then do exactly what ~/apps/hermes-accounting-starter/SETUP.md says, in order, and nothing else. Do not offer me alternatives or extra options.
 ```
 
-Everything else (install, dashboards, Gmail connection, first scan and the
-recurring jobs) is written out for the agent in [SETUP.md](../SETUP.md).
+The agent runs one install command, then follows [SETUP.md](../SETUP.md).
 
-What you do yourself during setup:
-1. Sign in to Composio: click **Authorize** on the `composio` MCP server in
-   the Hermes dashboard (or run `hermes mcp login composio` over SSH).
-2. Click the Gmail link and approve Google consent.
-3. Approve the first scan before recurring jobs are created.
+What you do yourself:
+1. Click **Authorize** on the `composio` MCP server in the Hermes dashboard
+   and sign in to Composio (free account; no API key).
+2. Start a New chat when asked and paste the line Hermes gives you.
+3. Open the Gmail link Hermes gives you and approve Google's screen.
 
-No API key is needed. For an advanced setup where Google itself enforces
-read-only access, see [COMPOSIO.md](COMPOSIO.md).
-
-The Hermes agent must already have working model access. Composio and model
-usage are billed by those providers.
+Hermes then scans recent mail and shows you what it found before booking
+anything. Composio and model usage are billed by those providers.

@@ -132,12 +132,7 @@ def main():
     if args.skip_hermes:
         print('Start dashboard: '+shlex.join([str(exe), '--data-dir', str(data), 'serve']))
         return
-    print('Continue with SETUP.md step 2. Tell the person:')
-    print('  1. Open your Hermes dashboard (same address and login as always) and click the')
-    print('     "Accounting" tab. If it is missing, open your dashboard address with')
-    print('     /api/dashboard/plugins/rescan added to the end once, then refresh.')
-    print('  2. Open MCP servers, find "composio", click Authorize and sign in to Composio')
-    print('     (or run `hermes mcp login composio` in an SSH terminal).')
+    print('Next: follow step 2 of SETUP.md (send the hand-over message, then stop).')
 
 
 if __name__ == '__main__':

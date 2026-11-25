@@ -24,7 +24,7 @@ def test_embed_render_has_only_in_page_links_and_scoped_css(tmp_path, capsys):
     page = json.loads(capsys.readouterr().out)
     assert page['html'].startswith('<div class="ls-app">') and '<html' not in page['html']
     assert 'href="/' not in page['html'] and 'data-view="reviews"' in page['html']
-    assert 'DEMO' in page['html'] and 'ssh -N' not in page['html']
+    assert 'Demo data' in page['html'] and 'ssh -N' not in page['html']
     assert ':host{' in page['css'] and ':root{' not in page['css'] and 'body{' not in page['css']
 
 
@@ -81,3 +81,37 @@ def test_installer_copies_plugin_and_refuses_foreign_directory(tmp_path):
     (other/'plugins/accounting-starter').mkdir(parents=True)
     with pytest.raises(SystemExit):
         installer.install_dashboard_tab(other, Path('/app/exe'), Path('/data'))
+
+
+def test_reports_keep_currencies_apart_and_add_up(tmp_path):
+    from accounting_starter.ledger import Ledger
+    from accounting_starter import reports
+    from accounting_starter.render import render_page
+    ledger = Ledger(tmp_path/'demo.sqlite3').initialize()
+    ledger.seed_demo()
+    data = reports.build(ledger)
+    usd, others = data['primary'], data['others']
+    assert usd['currency'] == 'USD' and [o['currency'] for o in others] == ['EUR']
+    in_window = [i for i in ledger.list_records('invoices')
+                 if i['currency'] == 'USD' and i['issued_date'][:7] in data['months']]
+    assert usd['revenue'] == sum(i['amount_minor'] for i in in_window)
+    assert usd['net'] == usd['revenue'] - usd['expenses']
+    assert usd['rows'][-1]['cumulative'] == usd['net']
+    assert usd['outstanding'] == sum(i['balance_minor'] for i in ledger.list_records('invoices') if i['currency'] == 'USD')
+    assert usd['growth'] > 0 and usd['overdue_count'] >= 1
+    html = render_page(ledger, 'reports', embed=True)
+    assert '<svg' in html and 'Month by month' in html and 'EUR month by month' in html
+    overview = render_page(ledger, '', embed=True)
+    assert 'You kept' in overview and 'Who owes you' in overview and 'DEMO' not in overview
+
+
+def test_every_view_renders_for_empty_and_demo_ledgers(tmp_path):
+    from accounting_starter.ledger import Ledger
+    from accounting_starter.render import VIEWS, render_page
+    empty = Ledger(tmp_path/'ledger.sqlite3').initialize()
+    demo = Ledger(tmp_path/'demo.sqlite3').initialize()
+    demo.seed_demo()
+    for ledger in (empty, demo):
+        for view in ['', *VIEWS]:
+            for embed in (False, True):
+                assert '<main id="main">' in render_page(ledger, view, embed=embed)

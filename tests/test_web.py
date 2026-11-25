@@ -9,9 +9,9 @@ def test_dashboard_shows_empty_ledger_and_currency_summary(tmp_path):
     client = TestClient(create_app(tmp_path / 'ledger.sqlite3'))
     response = client.get('/')
     assert response.status_code == 200
-    assert 'Ledger Starter' in response.text
-    assert 'No currency activity yet' in response.text
-    assert 'LIVE LEDGER' in response.text
+    assert 'Ledger' in response.text
+    assert 'Nothing booked yet' in response.text
+    assert 'Your books' in response.text
 
 
 def test_accessible_record_views_escape_untrusted_text(tmp_path):

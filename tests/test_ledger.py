@@ -96,10 +96,13 @@ def test_demo_is_explicit_deterministic_and_cannot_mix_with_live(tmp_path):
     assert before['is_demo'] is True
     assert before['counts']['invoices'] > 0
     assert before['pending_reviews'] > 0
-    assert demo.list_records('invoices')[0]['invoice_number'].startswith('DEMO-')
-    assert demo.list_records('invoices')[0]['issued_date'] == '2025-01-01'
-    assert demo.list_records('expenses')[0]['category'] == 'Supplies'
-    assert demo.list_records('payments')[0]['received_date'] == '2025-01-15'
+    invoices = demo.list_records('invoices')
+    assert len(invoices) > 50 and len(demo.list_records('expenses')) > 50
+    assert invoices[0]['invoice_number'].startswith('INV-')
+    assert len({i['issued_date'][:7] for i in invoices}) == 12
+    names = [c['name'] for c in demo.list_records('clients')]
+    assert not any('demo' in n.lower() for n in names)
+    assert {i['status'] for i in invoices} >= {'paid', 'overdue'}
     assert live.summary()['counts']['invoices'] == 0
     second = Ledger(tmp_path / 'second-demo.db').initialize()
     second.seed_demo()

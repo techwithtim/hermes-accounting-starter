@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 HERE = Path(__file__).resolve().parent
-VIEWS = {'', 'invoices', 'expenses', 'payments', 'clients', 'reviews', 'documents', 'audit'}
+VIEWS = {'', 'reports', 'invoices', 'expenses', 'payments', 'clients', 'reviews', 'documents', 'audit'}
 
 
 def _settings():

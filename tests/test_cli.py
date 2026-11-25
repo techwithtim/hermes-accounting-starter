@@ -37,7 +37,7 @@ def test_demo_requires_explicit_flag_and_never_touches_live(tmp_path, capsys):
     assert demo.summary()['counts']['invoices'] > 0
     assert live.summary()['counts']['invoices'] == 0
     response = TestClient(create_app(tmp_path / 'demo.sqlite3', demo=True)).get('/clients')
-    assert 'DEMO · Fictional sample data' in response.text
+    assert 'Demo data' in response.text
     assert 'Live client only' not in response.text
     capsys.readouterr()
     main(args + ['--demo', 'status'])

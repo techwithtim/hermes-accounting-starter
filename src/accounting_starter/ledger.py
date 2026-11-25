@@ -209,24 +209,39 @@ class Ledger:
                 return
             if db.execute('SELECT 1 FROM records LIMIT 1').fetchone():
                 raise ValueError('Demo seed requires an empty database')
-            def add(kind, key, **data):
-                return self._insert(db, kind, dict(data, source_id='demo:' + key,
-                    source='demo', evidence='DEMO — entirely fictional sample data'))
-            client = add('clients', 'client', name='DEMO — Fictional Aurora Studio')['id']
-            invoice = add('invoices', 'invoice-usd', client_id=client, amount_minor=125000,
-                          currency='USD', description='DEMO fictional design service', invoice_number='DEMO-001',
-                          issued_date='2025-01-01', due_date='2025-02-01')['id']
-            add('invoices', 'invoice-eur', client_id=client, amount_minor=40000,
-                currency='EUR', description='DEMO fictional consulting', invoice_number='DEMO-002',
-                issued_date='2025-01-01', due_date='2025-02-01')
-            add('expenses', 'expense', client_id=client, amount_minor=7500,
-                currency='USD', description='DEMO fictional supplies', incurred_date='2025-01-10', category='Supplies')
-            payment = add('payments', 'payment', client_id=client, amount_minor=50000,
-                          currency='USD', description='DEMO fictional partial payment', received_date='2025-01-15')['id']
-            add('allocations', 'allocation', payment_id=payment, invoice_id=invoice,
-                amount_minor=50000, currency='USD')
-            add('reviews', 'review', reason='DEMO email has no currency', status='pending', resolution='')
-            add('documents', 'document', title='DEMO fictional agreement', url='https://example.invalid/demo')
+            from .demo_data import build
+            demo = build()
+
+            def add(kind, item, **data):
+                data.setdefault('evidence', item.get('evidence', 'Fictional demo record'))
+                return self._insert(db, kind, dict(data, source_id='demo:' + item['key'], source='demo'))
+
+            ids = {}
+            for c in demo['clients']:
+                extra = {k: c[k] for k in ('role', 'category') if k in c}
+                ids[c['name']] = add('clients', c, name=c['name'], **extra)['id']
+            invoice_ids = {}
+            for inv in demo['invoices']:
+                invoice_ids[inv['key']] = add('invoices', inv, client_id=ids[inv['client']],
+                    amount_minor=inv['amount_minor'], currency=inv['currency'], description=inv['description'],
+                    invoice_number=inv['invoice_number'], issued_date=inv['issued_date'],
+                    due_date=inv['due_date'])['id']
+            for pay in demo['payments']:
+                payment = add('payments', pay, client_id=ids[pay['client']], amount_minor=pay['amount_minor'],
+                              currency=pay['currency'], description=pay['description'],
+                              received_date=pay['received_date'])['id']
+                add('allocations', dict(key='alloc-' + pay['key'], evidence=pay['evidence']),
+                    payment_id=payment, invoice_id=invoice_ids[pay['invoice']],
+                    amount_minor=pay['amount_minor'], currency=pay['currency'])
+            for exp in demo['expenses']:
+                add('expenses', exp, client_id=ids[exp['client']], amount_minor=exp['amount_minor'],
+                    currency=exp['currency'], description=exp['description'],
+                    incurred_date=exp['incurred_date'], category=exp['category'])
+            for review in demo['reviews']:
+                add('reviews', review, reason=review['reason'], evidence=review['evidence'],
+                    status=review['status'], resolution=review['resolution'])
+            for doc in demo['documents']:
+                add('documents', doc, title=doc['title'], url=doc['url'])
             db.execute("INSERT INTO metadata(key,value) VALUES('is_demo','true')")
 
     def summary(self):
