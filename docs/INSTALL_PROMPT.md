@@ -12,8 +12,9 @@ The agent runs one install command, then follows [SETUP.md](../SETUP.md).
 What you do yourself:
 1. Open your dashboard address with `/api/dashboard/plugins/rescan` added to
    the end, then refresh the dashboard: the **Accounting** tab appears.
-2. Click **Authorize** on the `composio` MCP server in the Hermes dashboard
-   and sign in to Composio (free account; no API key).
+2. In the Hermes dashboard open **MCP**, click **Authenticate** on
+   `composio` and sign in to Composio (free account; no API key), then click
+   **Restart Gateway**.
 3. Start a New chat when asked and paste the line Hermes gives you.
 4. Open the Gmail link Hermes gives you and approve Google's screen.
 
@@ -24,8 +25,9 @@ anything. Composio and model usage are billed by those providers.
 
 1. Create a free Composio account at https://composio.dev. That gives you a
    workspace; skip this if you already have one.
-2. In the Hermes dashboard, open **MCP servers**, find **composio**, click
-   **Authorize** and sign in with that account.
+2. In the Hermes dashboard, open **MCP**, find **composio**, click
+   **Authenticate** and sign in with that account. Then click
+   **Restart Gateway** so chats can see Composio.
 3. Connect Gmail: in a new chat, tell Hermes "Connect my Gmail" and open the
    link it gives you (or connect the Gmail app from your Composio dashboard).
 

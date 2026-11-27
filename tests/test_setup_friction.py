@@ -31,3 +31,18 @@ def test_installer_prints_rescan_link_when_dashboard_address_is_known(tmp_path, 
     assert mod.dashboard_url(tmp_path) == 'https://hermes.example.com'
     monkeypatch.setenv('HERMES_DASHBOARD_PUBLIC_URL', 'http://203.0.113.7:9119')
     assert mod.dashboard_url(tmp_path) == 'http://203.0.113.7:9119'
+
+
+def test_setup_names_the_exact_composio_call_and_gateway_restart():
+    # Fresh-VPS run (Hermes v0.23.4): a bare "COMPOSIO_MANAGE_CONNECTIONS" made the agent pick
+    # another tool and wrongly report "not signed in"; Authenticate only reconnects the dashboard.
+    setup = (ROOT/'SETUP.md').read_text()
+    skill = (ROOT/'skills/accounting-starter/SKILL.md').read_text()
+    call = 'mcp__composio__COMPOSIO_MANAGE_CONNECTIONS'
+    args = '{"toolkits": [{"action": "add", "name": "gmail"}]}'
+    assert call in setup and args in setup
+    assert call in skill and args in skill
+    assert 'Restart Gateway' in setup and 'Restart Gateway' in skill
+    # Dashboard labels as Hermes shows them.
+    assert '**MCP**' in setup and '**Authenticate**' in setup
+    assert 'Authorize' not in setup and 'MCP servers' not in setup

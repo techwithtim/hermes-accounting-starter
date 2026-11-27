@@ -19,13 +19,16 @@ It uses `hermes config set`, keeps an existing entry for the same URL under
 whatever name it has, and refuses to overwrite a different server named
 `composio`. Then the person:
 
-1. Signs Hermes in to their Composio account: **Authorize** on the server in
-   the Hermes dashboard, or `hermes mcp login composio` in an SSH terminal
+1. Signs Hermes in to their Composio account: **Authenticate** on the server under
+   **MCP** in the Hermes dashboard, or `hermes mcp login composio` in an SSH terminal
    (open the printed link, approve, paste the address the browser ends up
    on back into the terminal). Hermes stores and refreshes the tokens.
+   Then **Restart Gateway** (dashboard) so chat sessions load the Composio
+   tools; signing in only reconnects the dashboard's own process.
    An agent's own terminal cannot do this step: it is non-interactive and
    Hermes stops with "Run `hermes mcp login composio` interactively".
-2. Opens the Gmail link the agent gets from `COMPOSIO_MANAGE_CONNECTIONS`
+2. Opens the Gmail link the agent gets from `mcp__composio__COMPOSIO_MANAGE_CONNECTIONS`
+   (arguments `{"toolkits": [{"action": "add", "name": "gmail"}]}`)
    and approves Google consent.
 
 The `accounting-starter` skill allows only `GMAIL_FETCH_EMAILS`,

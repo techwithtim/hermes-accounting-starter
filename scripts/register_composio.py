@@ -1,7 +1,8 @@
 """Register Composio's hosted MCP server (sign-in, no API key) through the Hermes CLI.
 
 Only adds the entry. Signing in is the person's step: `hermes mcp login composio`
-in an SSH terminal, or Authorize on the server in the Hermes dashboard.
+in an SSH terminal, or Authenticate on the server under MCP in the Hermes dashboard
+(then Restart Gateway so chats see the tools).
 """
 import os
 from pathlib import Path

@@ -39,8 +39,8 @@ One install command adds the ledger, the tools and an **Accounting** tab
 to your Hermes dashboard (same address and login). Then you:
 1. Open your dashboard address with `/api/dashboard/plugins/rescan` added to
    the end once, then refresh, so the **Accounting** tab appears.
-2. Sign in to Composio: click **Authorize** on the `composio` MCP server in
-   the Hermes dashboard. No API key.
+2. Sign in to Composio: in the Hermes dashboard open **MCP**, click
+   **Authenticate** on `composio`, then **Restart Gateway**. No API key.
 3. Click the Gmail link Hermes gives you and approve Google's screen.
 
 Hermes then scans recent mail and shows what it found before booking
@@ -59,8 +59,9 @@ and LLM usage are subject to their respective plans/charges.
 
 1. Create a free Composio account at https://composio.dev. That gives you a
    workspace; skip this if you already have one.
-2. In the Hermes dashboard, open **MCP servers**, find **composio**, click
-   **Authorize** and sign in with that account.
+2. In the Hermes dashboard, open **MCP**, find **composio**, click
+   **Authenticate** and sign in with that account. Then click
+   **Restart Gateway** so chats can see Composio.
 3. Connect Gmail: in a new chat, tell Hermes "Connect my Gmail" and open the
    link it gives you (or connect the Gmail app from your Composio dashboard).
 
@@ -107,8 +108,8 @@ See [deployment and service instructions](docs/DEPLOYMENT.md).
 
 ## Connect and automate
 
-1. Sign Hermes in to Composio (`hermes mcp login composio`, or Authorize in the
-   dashboard) and connect Gmail; see [COMPOSIO.md](docs/COMPOSIO.md).
+1. Sign Hermes in to Composio (`hermes mcp login composio`, or Authenticate under
+   MCP in the dashboard, then Restart Gateway) and connect Gmail; see [COMPOSIO.md](docs/COMPOSIO.md).
 2. Ask Hermes to load the `accounting-starter` skill and run a review-first scan.
 3. Confirm the classification policy and enable the supplied
    [hourly capture/daily review jobs](docs/AUTOMATION.md).

@@ -40,22 +40,35 @@ Send this message, word for word, and stop. If the installer printed a
 >    will see a short `"ok": true` message. Go back to the dashboard and
 >    refresh: **Accounting** now appears in the menu. Click **Demo data**
 >    there to see an example.
-> 2. In the dashboard, open **MCP servers**, find **composio**, click
->    **Authorize** and sign in to Composio (create a free account if asked).
+> 2. In the dashboard, open **MCP**, find **composio**, click
+>    **Authenticate** and sign in to Composio (create a free account if asked).
+>    Then click **Restart Gateway** so the chat can see Composio.
 > 3. Start a **New chat** and paste:
 >    `Continue my bookkeeping setup from step 3 of ~/apps/hermes-accounting-starter/SETUP.md`
 
 ## 3. Connect Gmail (the new chat starts here)
 
-Load the `accounting-starter` skill. Call `COMPOSIO_MANAGE_CONNECTIONS` for the
-`gmail` toolkit.
+Do this first, before anything else, without searching for tools. Call this
+exact tool with these exact arguments:
 
-- If the Composio tools are not available, send: "Composio is not signed in
-  yet. In your Hermes dashboard open MCP servers, click Authorize on composio,
-  sign in, then start a New chat and paste the same line again." Then stop.
-- If Gmail is already connected, go to step 4.
-- Otherwise send: "Open this link and sign in with the Gmail account you use
-  for invoices and receipts: <link>. Reply done when you're back." Wait.
+```
+mcp__composio__COMPOSIO_MANAGE_CONNECTIONS
+{"toolkits": [{"action": "add", "name": "gmail"}]}
+```
+
+Then act on what it returned:
+
+- It returned a link: send "Open this link and sign in with the Gmail account
+  you use for invoices and receipts: <link>. Reply done when you're back."
+  Wait.
+- It says Gmail is already connected (ACTIVE): go to step 4.
+- Only if `mcp__composio__COMPOSIO_MANAGE_CONNECTIONS` does not exist in your
+  tool list, or the call fails with a sign-in or authorization error, send:
+  "Composio isn't visible to this chat yet. In your Hermes dashboard open MCP,
+  click Authenticate on composio if it isn't signed in, then click Restart
+  Gateway, start a New chat and paste the same line again." Then stop. Never
+  send this for any other reason, and never use COMPOSIO_SEARCH_TOOLS to
+  decide whether Composio is signed in.
 
 When they reply, confirm the connection is ACTIVE and save the Gmail account
 ID to `~/.local/share/hermes-accounting-starter/connection.md`. If Composio

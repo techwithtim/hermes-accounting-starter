@@ -14,9 +14,12 @@ Mail comes through Composio's hosted MCP server (normally named `composio`),
 which the owner signed in to. There is no API key to handle. The owner's
 Gmail account ID is in `connection.md` in the runtime directory.
 
-- Use COMPOSIO_SEARCH_TOOLS / COMPOSIO_GET_TOOL_SCHEMAS to load schemas,
-  COMPOSIO_MANAGE_CONNECTIONS (toolkit `gmail`) only to connect Gmail when it
-  is not connected, and COMPOSIO_MULTI_EXECUTE_TOOL to read mail.
+- In Hermes the tools are named `mcp__composio__<TOOL>`. Use
+  `mcp__composio__COMPOSIO_SEARCH_TOOLS` / `mcp__composio__COMPOSIO_GET_TOOL_SCHEMAS`
+  to load schemas and `mcp__composio__COMPOSIO_MULTI_EXECUTE_TOOL` to read mail.
+- To connect or check Gmail, call `mcp__composio__COMPOSIO_MANAGE_CONNECTIONS`
+  with exactly `{"toolkits": [{"action": "add", "name": "gmail"}]}`. It returns
+  a sign-in link, or says Gmail is already ACTIVE.
 - Through COMPOSIO_MULTI_EXECUTE_TOOL run ONLY these read tools:
   `GMAIL_FETCH_EMAILS`, `GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID`,
   `GMAIL_GET_ATTACHMENT`, `GMAIL_LIST_LABELS`. Never run any other tool slug,
@@ -31,8 +34,9 @@ Gmail account ID is in `connection.md` in the runtime directory.
   missing, and take attachment IDs from that full payload.
 - If a call fails, a page is skipped or the connection is not ACTIVE, say the
   scan is incomplete. If the Composio tools are missing entirely, the owner
-  must sign in again: `hermes mcp login composio` (or Authorize in the Hermes
-  dashboard).
+  must open **MCP** in the Hermes dashboard, click **Authenticate** on
+  composio if needed, then **Restart Gateway** and start a New chat (or run
+  `hermes mcp login composio` and restart the gateway).
 
 ## When the owner asks in chat
 A direct request from the owner in this chat ("create an invoice for Acme for

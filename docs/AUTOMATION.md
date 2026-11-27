@@ -35,7 +35,8 @@ actual checkout path, data directory, Gmail account ID and the user's
 approved policy. Keep delivery local unless the owner chooses a destination.
 No secrets in job prompts: the Composio sign-in tokens are stored by Hermes.
 If a job reports that Composio needs sign-in again, run
-`hermes mcp login composio` (or Authorize in the dashboard).
+`hermes mcp login composio` (or Authenticate under MCP in the dashboard),
+then restart the gateway.
 
 Hourly prompt template:
 
