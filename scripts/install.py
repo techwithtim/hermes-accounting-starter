@@ -135,14 +135,19 @@ def main():
     if args.skip_hermes:
         print('Start dashboard: '+shlex.join([str(exe), '--data-dir', str(data), 'serve']))
         return
-    public = dashboard_url(home)
-    if public:
-        print(f'Rescan link: {public}/api/dashboard/plugins/rescan')
+    link, state = find_dashboard(home)
+    if state == 'rescanned':
+        print('Accounting tab: already loaded (this dashboard has no login).')
+    elif link:
+        print(f'Rescan link: {link}')
     print('Next: follow step 2 of SETUP.md (send the hand-over message, then stop).')
 
 
-def dashboard_url(home):
-    """The dashboard's public address if Hermes knows it (env or dashboard.public_url), else None."""
+RESCAN_PATH = '/api/dashboard/plugins/rescan'
+
+
+def configured_dashboard_url(home):
+    """The public address Hermes was told about (env or dashboard.public_url), else None."""
     url = os.environ.get('HERMES_DASHBOARD_PUBLIC_URL', '').strip()
     if not url:
         try:
@@ -152,6 +157,92 @@ def dashboard_url(home):
         except Exception:
             url = ''
     return url.rstrip('/') if url.startswith(('http://', 'https://')) else None
+
+
+def listening_sockets():
+    """(bind address, port) for every listening TCP socket, read from /proc (Linux only)."""
+    found = set()
+    for table, v6 in (('/proc/net/tcp', False), ('/proc/net/tcp6', True)):
+        try:
+            lines = Path(table).read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for line in lines:
+            parts = line.split()
+            if len(parts) < 4 or parts[3] != '0A':  # 0A = LISTEN
+                continue
+            addr_hex, port_hex = parts[1].split(':')
+            raw = bytes.fromhex(addr_hex)
+            if v6:
+                words = [raw[i:i+4][::-1] for i in range(0, 16, 4)]
+                import ipaddress
+                addr = str(ipaddress.IPv6Address(b''.join(words)))
+                if addr.startswith('::ffff:'):
+                    addr = addr[7:]
+            else:
+                addr = '.'.join(str(b) for b in raw[::-1])
+            found.add((addr, int(port_hex, 16)))
+    return found
+
+
+def probe_dashboard(port, timeout=1.5):
+    """'login' if this local port is a Hermes dashboard that needs a login, 'rescanned' if it
+    answered the rescan itself (no login on this dashboard), else None."""
+    import urllib.error  # urllib.request is imported at the top
+    try:
+        with urllib.request.urlopen(f'http://127.0.0.1:{port}{RESCAN_PATH}', timeout=timeout) as r:
+            body = json.loads(r.read(4096) or b'{}')
+            return 'rescanned' if body.get('ok') is True and 'count' in body else None
+    except urllib.error.HTTPError as e:
+        try:
+            body = json.loads(e.read(4096) or b'{}')
+        except Exception:
+            return None
+        return 'login' if e.code == 401 and 'login_url' in body else None
+    except Exception:
+        return None
+
+
+def primary_ip():
+    """This server's main IPv4 address (no packet is sent), else None."""
+    import socket
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(('1.1.1.1', 80))
+            return s.getsockname()[0]
+    except OSError:
+        return None
+
+
+def find_dashboard(home, sockets=None, probe=probe_dashboard, ip=primary_ip):
+    """Return (rescan_url or None, state) where state is 'login', 'rescanned' or 'unknown'.
+
+    The rescan URL only works in the person's logged-in browser, so the installer prints it
+    for the agent to pass on. A dashboard without a login gets rescanned right here."""
+    sockets = listening_sockets() if sockets is None else sockets
+    # Default port first, then any other listener; first one that answers like Hermes wins.
+    ports = sorted({p for _, p in sockets}, key=lambda p: (p != 9119, p))
+    port = state = None
+    for candidate in ports:
+        state = probe(candidate)
+        if state:
+            port = candidate
+            break
+    public = configured_dashboard_url(home)
+    if public:
+        return public + RESCAN_PATH, state or 'login'
+    if not port:
+        return None, 'unknown'
+    binds = {a for a, p in sockets if p == port}
+    if binds and binds <= {'127.0.0.1', '::1'}:
+        # Loopback only: reached through a proxy or tunnel whose address we cannot know.
+        return None, state
+    specific = sorted(a for a in binds if a not in ('0.0.0.0', '::'))
+    host = specific[0] if specific else ip()
+    if not host:
+        return None, state
+    host = f'[{host}]' if ':' in host else host
+    return f'http://{host}:{port}{RESCAN_PATH}', state
 
 
 if __name__ == '__main__':

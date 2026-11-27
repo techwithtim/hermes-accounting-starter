@@ -29,17 +29,35 @@ If it fails twice, show the person the last lines of the error and stop.
 
 ## 2. Hand over (then stop)
 
-Send this message, word for word, and stop. If the installer printed a
-`Rescan link:` line, put that link in place of the instruction in item 1.
+Send this message and stop. Fill in item 1 from the installer's output:
+
+- It printed `Rescan link: <url>`: use item 1A with that exact URL. Always
+  include the URL; the person cannot continue without it.
+- It printed `Accounting tab: already loaded`: use item 1B.
+- Neither: use item 1C.
+
+Send only the chosen version as item 1 (drop the 1A/1B/1C labels and the
+other two versions). Items 2 and 3 go word for word.
 
 > Your bookkeeping system is installed. Three quick things:
 >
-> 1. Load the new Accounting tab: in your browser, open your Hermes dashboard
->    address with `/api/dashboard/plugins/rescan` added to the end (for
->    example `http://your-server-ip:port/api/dashboard/plugins/rescan`). You
->    will see a short `"ok": true` message. Go back to the dashboard and
+> 1. (1A) Load the new Accounting tab: open this link in the browser where
+>    you're logged in to your Hermes dashboard: <url>
+>    You will see a short `"ok": true` message. Go back to the dashboard and
 >    refresh: **Accounting** now appears in the menu. Click **Demo data**
->    there to see an example.
+>    there to see an example. (If the link doesn't open, take the address
+>    you use for your Hermes dashboard and add
+>    `/api/dashboard/plugins/rescan` to the end.)
+>
+>    (1B) Refresh your Hermes dashboard: **Accounting** now appears in the
+>    menu. Click **Demo data** there to see an example.
+>
+>    (1C) Load the new Accounting tab: in your browser, take the address you
+>    use for your Hermes dashboard and add `/api/dashboard/plugins/rescan`
+>    to the end (for example
+>    `http://your-server-ip:port/api/dashboard/plugins/rescan`). You will
+>    see a short `"ok": true` message. Go back to the dashboard and refresh:
+>    **Accounting** now appears in the menu.
 > 2. In the dashboard, open **MCP**, find **composio**, click
 >    **Authenticate** and sign in to Composio (create a free account if asked).
 >    Then click **Restart Gateway** so the chat can see Composio.
